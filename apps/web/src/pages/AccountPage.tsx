@@ -6,6 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/Badge';
 import { Alert } from '../components/Feedback';
 import { PageHeader } from '../components/PageHeader';
+import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
 
 export function AccountPage() {
@@ -52,11 +53,11 @@ export function AccountPage() {
           <div className="card-header"><div><h2><KeyRound size={18} /> Change password</h2><p>Use at least 10 characters. A short sentence works well.</p></div></div>
           <div className="card-body stack" style={{ gap: 16 }}>
             <div className="field"><label htmlFor="cur">Current password</label>
-              <input id="cur" className="input" type="password" autoComplete="current-password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} /></div>
+              <PasswordInput id="cur" autoComplete="current-password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} /></div>
             <div className="field"><label htmlFor="new">New password</label>
-              <input id="new" className="input" type="password" autoComplete="new-password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} /></div>
+              <PasswordInput id="new" autoComplete="new-password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} /></div>
             <div className="field"><label htmlFor="rep">Confirm new password</label>
-              <input id="rep" className="input" type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} /></div>
+              <PasswordInput id="rep" autoComplete="new-password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} /></div>
             {msg && <Alert kind={msg.ok ? 'success' : 'error'}>{msg.text}</Alert>}
             <div className="form-actions"><button className="btn btn-primary" disabled={busy}><ShieldCheck size={17} /> {busy ? 'Saving…' : 'Update password'}</button></div>
           </div>

@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Mail, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@msl/shared';
 import { api, ApiError } from '../api/client';
 import { BrandMark } from '../components/BrandMark';
 import { Alert } from '../components/Feedback';
+import { PasswordInput } from '../components/PasswordInput';
 import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
@@ -76,10 +77,8 @@ export function LoginPage() {
             </div>
             <div className="field">
               <label htmlFor="password">Password</label>
-              <div className="input-icon"><Lock size={18} />
-                <input id="password" className="input" type="password" autoComplete="current-password" placeholder="••••••••••"
-                  value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              </div>
+              <PasswordInput id="password" withIcon autoComplete="current-password" placeholder="••••••••••"
+                value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             </div>
             {twoFactor && (
               <div className="field">
