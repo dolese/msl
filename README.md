@@ -14,6 +14,8 @@ for tool config and scripts.
 
 ## Project structure
 
+![MSL project structure](docs/project-structure.png)
+
 ```
 msl/
 ├── package.json                 # npm workspaces + root scripts
