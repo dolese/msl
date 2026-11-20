@@ -10,18 +10,41 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   ID_ENCRYPTION_KEY: base64Key,
   ID_HASH_KEY: base64Key,
-  WEB_ORIGIN: z.url().default('http://localhost:5173'),
+  WEB_ORIGIN: z.preprocess(
+    (v) => v ?? (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined),
+    z.url().default('http://localhost:5173'),
+  ),
+  // Photo storage: "r2" = Cloudflare R2 (production), "local" = disk (development only)
+  STORAGE_DRIVER: z.enum(['local', 'r2']).optional(),
   UPLOAD_DIR: z.string().default('./uploads'),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET: z.string().optional(),
+  /** Optional override, e.g. a jurisdiction endpoint (…eu.r2.cloudflarestorage.com) or a local S3 mock in tests */
+  R2_ENDPOINT: z.url().optional(),
+  /** Directory with the built web app; served by the API in production. */
+  WEB_DIST_DIR: z.string().optional(),
+}).transform((e, ctx) => {
+  const driver = e.STORAGE_DRIVER ?? (e.R2_BUCKET ? 'r2' : 'local');
+  if (driver === 'r2') {
+    for (const k of ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET'] as const) {
+      if (!e[k]) ctx.addIssue({ code: 'custom', path: [k], message: 'required when photos are stored in R2' });
+    }
+  } else if (e.NODE_ENV === 'production') {
+    ctx.addIssue({ code: 'custom', path: ['STORAGE_DRIVER'], message: 'production must store photos in R2 (set the R2_* variables)' });
+  }
+  return { ...e, STORAGE_DRIVER: driver };
 });
 
-export type Env = z.infer<typeof schema>;
+export type Env = z.output<typeof schema>;
 
 let cached: Env | undefined;
 export function env(): Env {
   if (!cached) {
     const parsed = schema.safeParse(process.env);
     if (!parsed.success) {
-      console.error('Invalid environment:', z.treeifyError(parsed.error));
+      console.error('Invalid environment:\n' + z.prettifyError(parsed.error));
       process.exit(1);
     }
     cached = parsed.data;

@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import { resolve } from 'node:path';
 import { z } from 'zod';
 import { audit } from '../../lib/audit.js';
 import { notFound } from '../../lib/http-error.js';
+import { sendPhoto } from '../../lib/upload.js';
 import { rateLimit } from '../../middleware/rate-limit.js';
 import { resolveShareToken, toSharedDTO } from './share.service.js';
 
@@ -27,5 +27,5 @@ publicShareRouter.get('/:token/photo', async (req, res) => {
   const { token } = tokenParam.parse(req.params);
   const row = await resolveShareToken(token);
   if (!row.record.photoPath) throw notFound();
-  res.sendFile(resolve(process.env.UPLOAD_DIR ?? './uploads', row.record.photoPath));
+  await sendPhoto(res, row.record.photoPath);
 });

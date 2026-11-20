@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import { resolve } from 'node:path';
 import { z } from 'zod';
 import { createRecordSchema, createShareSchema, listRecordsQuery, updateRecordSchema } from '@msl/shared';
 import { requirePermission } from '../../middleware/auth.js';
 import { audit } from '../../lib/audit.js';
 import { notFound } from '../../lib/http-error.js';
-import { photoUpload } from '../../lib/upload.js';
+import { photoUpload, savePhoto, sendPhoto } from '../../lib/upload.js';
 import { createShareLink } from '../share/share.service.js';
 import { listRecordHistory } from '../audit/audit.service.js';
 import * as svc from './records.service.js';
@@ -27,7 +26,8 @@ recordsRouter.get('/export.csv', requirePermission('records:export'), async (req
 recordsRouter.post('/', requirePermission('records:create'), photoUpload(), async (req, res) => {
   // multipart fields arrive as strings
   const input = createRecordSchema.parse({ ...req.body, consent: req.body.consent === 'true' || req.body.consent === true });
-  const row = await svc.createRecord(input, req.user!.id, req.file?.filename ?? null);
+  const photoKey = req.file ? await savePhoto(req.file) : null;
+  const row = await svc.createRecord(input, req.user!.id, photoKey);
   await audit({ action: 'record.created', actorId: req.user!.id, recordId: row.id, targetLabel: row.fullName, ip: req.ip });
   res.status(201).json(svc.toDTO(row, { id: req.user!.id, name: req.user!.name }));
 });
@@ -72,8 +72,7 @@ recordsRouter.get('/:id/photo', requirePermission('records:read'), async (req, r
   if (req.query.download) {
     await audit({ action: 'record.photo_downloaded', actorId: req.user!.id, recordId: id, targetLabel: record.fullName, ip: req.ip });
   }
-  res.set('Cache-Control', 'private, no-store');
-  res.sendFile(resolve(process.env.UPLOAD_DIR ?? './uploads', record.photoPath));
+  await sendPhoto(res, record.photoPath);
 });
 
 recordsRouter.post('/:id/share', requirePermission('share:create'), async (req, res) => {

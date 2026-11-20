@@ -1,4 +1,5 @@
 // @ts-check
+import '../src/load-env.js';
 /**
  * Seeds the demo users from the design (all with password "ChangeMe123!").
  * Prints each user's TOTP secret + otpauth URL so you can add it to an authenticator app.

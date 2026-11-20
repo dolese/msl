@@ -4,16 +4,17 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --conditions=source --env-file=../../.env src/index.ts",
+    "dev": "tsx watch --conditions=source src/index.ts",
     "build": "tsc -p tsconfig.build.json",
-    "start": "node --env-file=../../.env dist/index.js",
+    "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx --conditions=source --env-file=../../.env scripts/seed.js"
+    "db:migrate": "node scripts/migrate.js",
+    "db:seed": "tsx --conditions=source scripts/seed.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1173.0",
     "@msl/shared": "*",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.0",

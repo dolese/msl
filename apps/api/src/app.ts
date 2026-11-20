@@ -1,10 +1,14 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { env } from './config/env.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { loadSession, requireAuth } from './middleware/auth.js';
 import { errorHandler } from './middleware/error.js';
+import { notFound } from './lib/http-error.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { recordsRouter } from './modules/records/records.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
@@ -16,7 +20,12 @@ export function createApp() {
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
 
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: {
+      // blob: lets the registration form preview the chosen photo before upload
+      directives: { 'img-src': ["'self'", 'data:', 'blob:'] },
+    },
+  }));
   app.use((req, res, next) => {
     // Strict CORS: only the web app origin, with credentials.
     const origin = req.get('origin');
@@ -44,6 +53,26 @@ export function createApp() {
   app.use('/api/users', requireAuth, usersRouter);
   app.use('/api/audit', requireAuth, auditRouter);
 
+  app.use('/api', (_req, _res, next) => next(notFound()));
+  serveWebApp(app);
+
   app.use(errorHandler);
   return app;
+}
+
+/**
+ * In production the API also serves the built React app, so web + API share one
+ * domain (required for the SameSite=Strict session cookie and relative /api calls).
+ */
+function serveWebApp(app: express.Express) {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const dir = env().WEB_DIST_DIR ?? resolve(here, '../../web/dist'); // apps/api/dist -> apps/web/dist
+  const index = resolve(dir, 'index.html');
+  if (!existsSync(index)) return; // dev: Vite serves the web app
+  app.use(express.static(dir, { index: false, maxAge: '1h' }));
+  // Client-side routes (/records/123, /s/:token, …) all load index.html
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    res.set('Cache-Control', 'no-cache').sendFile(index);
+  });
 }

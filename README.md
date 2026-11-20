@@ -21,6 +21,7 @@ msl/
 ├── package.json                 # npm workspaces + root scripts
 ├── tsconfig.base.json           # shared strict TS settings
 ├── docker-compose.yml           # local Postgres
+├── railway.json                 # Railway build / deploy settings
 ├── .env.example                 # copy to .env
 │
 ├── packages/
@@ -38,6 +39,7 @@ msl/
 │   │   ├── vitest.config.js     # JS config
 │   │   ├── drizzle/             # generated SQL migrations
 │   │   ├── scripts/seed.js      # JS script: demo users + TOTP enrolment URLs
+│   │   ├── scripts/migrate.js   # JS script: applies migrations (Railway pre-deploy)
 │   │   ├── test/                # vitest unit tests
 │   │   └── src/
 │   │       ├── index.ts         # server entry
@@ -49,7 +51,8 @@ msl/
 │   │       ├── lib/
 │   │       │   ├── crypto.ts    # AES-256-GCM, HMAC, scrypt passwords, tokens
 │   │       │   ├── audit.ts     # audit() writer
-│   │       │   ├── upload.ts    # multer: 5 MB, JPEG/PNG/WebP, random filenames
+│   │       │   ├── upload.ts    # 5 MB limit, checks real image bytes, random names
+│   │       │   ├── storage.ts   # photo storage: Cloudflare R2 (prod) or local disk (dev)
 │   │       │   └── …            # keys, http-error, mask-ip
 │   │       ├── middleware/
 │   │       │   ├── auth.ts      # session loader, requireAuth, requirePermission
@@ -118,11 +121,45 @@ npm run dev                       # API :4000, web :5173
 Demo password for seeded users: `ChangeMe123!`. Users seeded with 2FA off can't sign in
 until TOTP enrolment is built (see TODO in `users.service.ts`).
 
+## Deploying to Railway + Cloudflare R2
+
+One Railway service runs everything: the API also serves the built web app, so both
+share one domain (needed for the `SameSite=Strict` session cookie). Photos live in a
+**private** Cloudflare R2 bucket and are only ever streamed through the API after the
+permission check, never via a public bucket URL.
+
+**1. Cloudflare R2**
+1. Cloudflare dashboard → **R2** → *Create bucket*, e.g. `msl-photos`. Leave public access **off**.
+2. R2 → *Manage R2 API tokens* → *Create API token* with **Object Read & Write**, scoped to that bucket.
+3. Note the **Account ID**, **Access Key ID** and **Secret Access Key**.
+
+**2. Railway**
+1. *New project* → *Deploy from GitHub repo* → this repo. `railway.json` sets the build,
+   pre-deploy (migrations), start command and health check.
+2. *+ New* → *Database* → **PostgreSQL**.
+3. On the app service → **Variables**:
+
+   | Variable | Value |
+   |---|---|
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+   | `NODE_ENV` | `production` |
+   | `ID_ENCRYPTION_KEY`, `ID_HASH_KEY` | two different keys (command in `.env.example`); **back them up**, since losing `ID_ENCRYPTION_KEY` makes stored IDs unreadable |
+   | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` | from step 1 |
+   | `WEB_ORIGIN` | only if you use a custom domain (otherwise the Railway domain is used) |
+
+4. *Settings* → *Networking* → **Generate Domain**.
+5. Create the first users once: run `npm run db:seed` with the production variables
+   (e.g. `railway run npm run db:seed`), then change the passwords.
+
+In production the app refuses to start if any R2 variable is missing, so photos can't
+silently land on Railway's temporary disk.
+
 ## Scripts
 
 | Command | What it does |
 |---|---|
 | `npm run dev` | API (watch) + Vite dev server |
+| `npm start` | production server (API + built web app) |
 | `npm run typecheck` | `tsc --noEmit` in every workspace |
 | `npm test` | Vitest in shared + api |
 | `npm run build` | shared → dist, api → dist, web → dist |
@@ -132,5 +169,4 @@ until TOTP enrolment is built (see TODO in `users.service.ts`).
 - Invite email + password set + TOTP enrolment flow (invite currently creates the user only)
 - Registrar / date filters in the records list (chips are placeholders); user filter in the audit log
 - Record edit form in the web UI (API `PATCH /records/:id` exists)
-- Photo storage on object storage with encryption at rest (currently local disk)
 - Redis-backed rate limiting for multi-instance deployments
