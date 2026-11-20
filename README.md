@@ -138,7 +138,8 @@ permission check, never via a public bucket URL.
 
 **2. Railway**
 1. *New project* → *Deploy from GitHub repo* → this repo. `railway.json` sets the build,
-   pre-deploy (migrations), start command and health check.
+   start command and health check. Database tables are created/updated automatically
+   when the app starts, so no separate migration step is needed.
 2. *+ New* → *Database* → **PostgreSQL**.
 3. On the app service → **Variables**:
 
