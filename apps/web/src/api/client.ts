@@ -36,6 +36,7 @@ type SessionUser = { id: string; name: string; email: string; role: Role };
 export const api = {
   login: (body: LoginInput) =>
     request<{ user: SessionUser; csrfToken: string }>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  authConfig: () => request<{ twoFactorRequired: boolean }>('/auth/config'),
   me: () => request<{ user: SessionUser; csrfToken: string }>('/auth/me'),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
 

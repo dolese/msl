@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ROLES, type Role } from '@msl/shared';
 import { api } from '../api/client';
 import { AppHeader } from '../components/AppHeader';
@@ -10,6 +10,8 @@ import { useAsync } from '../hooks/useAsync';
 export function UsersPage() {
   const { data, loading, reload } = useAsync(() => api.listUsers(), []);
   const [filter, setFilter] = useState<Role | 'all'>('all');
+  const [twoFactor, setTwoFactor] = useState(false);
+  useEffect(() => { api.authConfig().then((c) => setTwoFactor(c.twoFactorRequired)).catch(() => undefined); }, []);
   const users = data ?? [];
   const shown = filter === 'all' ? users : users.filter((u) => u.role === filter);
 
@@ -44,9 +46,11 @@ export function UsersPage() {
             </div>
             <div className="right">
               <Badge value={u.role} />
-              <div className={`small ${u.twoFactorEnabled ? 'text-green' : 'muted'}`}>
-                {u.locked ? '🔒 Locked' : `2FA ${u.twoFactorEnabled ? 'on' : 'off'}`}
-              </div>
+              {u.locked ? (
+                <div className="small error">🔒 Locked</div>
+              ) : twoFactor && (
+                <div className={`small ${u.twoFactorEnabled ? 'text-green' : 'muted'}`}>2FA {u.twoFactorEnabled ? 'on' : 'off'}</div>
+              )}
             </div>
           </li>
         ))}

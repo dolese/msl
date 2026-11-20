@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loginSchema } from '@msl/shared';
-import { ApiError } from '../api/client';
+import { api, ApiError } from '../api/client';
 import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
@@ -11,10 +11,16 @@ export function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '', totp: '' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [twoFactor, setTwoFactor] = useState(false);
+
+  useEffect(() => {
+    api.authConfig().then((c) => setTwoFactor(c.twoFactorRequired)).catch(() => undefined);
+  }, []);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const parsed = loginSchema.safeParse(form);
+    const parsed = loginSchema.safeParse(twoFactor ? form : { email: form.email, password: form.password });
+    if (twoFactor && !form.totp) return setError('Enter the 6-digit code');
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? 'Check your details');
     setBusy(true);
     setError(null);
@@ -43,11 +49,13 @@ export function LoginPage() {
           <input type="password" autoComplete="current-password"
             value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
         </label>
-        <label>One-time code (2FA)
-          <input className="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-            value={form.totp} onChange={(e) => setForm({ ...form, totp: e.target.value.replace(/\D/g, '') })} />
-          <span className="hint">Check your authenticator app</span>
-        </label>
+        {twoFactor && (
+          <label>One-time code (2FA)
+            <input className="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+              value={form.totp} onChange={(e) => setForm({ ...form, totp: e.target.value.replace(/\D/g, '') })} />
+            <span className="hint">Check your authenticator app</span>
+          </label>
+        )}
         {error && <p className="error" role="alert">{error}</p>}
         <button className="btn-primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
         <p className="hint">Account locks after 5 failed attempts</p>

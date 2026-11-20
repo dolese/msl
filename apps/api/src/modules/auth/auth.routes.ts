@@ -1,11 +1,16 @@
 import { Router } from 'express';
 import { loginSchema } from '@msl/shared';
-import { isProd } from '../../config/env.js';
+import { env, isProd } from '../../config/env.js';
 import { requireAuth, SESSION_COOKIE } from '../../middleware/auth.js';
 import { rateLimit } from '../../middleware/rate-limit.js';
 import { SESSION_TTL_MS, signIn, signOut } from './auth.service.js';
 
 export const authRouter = Router();
+
+/** Public: tells the login page whether to ask for the 2FA code. */
+authRouter.get('/config', (_req, res) => {
+  res.json({ twoFactorRequired: env().REQUIRE_2FA });
+});
 
 authRouter.post('/login', rateLimit({ windowMs: 15 * 60_000, max: 20 }), async (req, res) => {
   const input = loginSchema.parse(req.body);

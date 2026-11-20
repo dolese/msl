@@ -10,6 +10,8 @@ const schema = z.object({
   DATABASE_URL: z.string().min(1),
   ID_ENCRYPTION_KEY: base64Key,
   ID_HASH_KEY: base64Key,
+  /** 2FA (authenticator code at sign-in). Off for now; set to "true" to require it for everyone. */
+  REQUIRE_2FA: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   WEB_ORIGIN: z.preprocess(
     (v) => v ?? (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined),
     z.url().default('http://localhost:5173'),

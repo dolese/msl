@@ -2,7 +2,8 @@
 import '../src/load-env.js';
 /**
  * Seeds the demo users from the design (all with password "ChangeMe123!").
- * Prints each user's TOTP secret + otpauth URL so you can add it to an authenticator app.
+ * With SEED_2FA=true it also enrols 2FA for the users marked twoFactor and prints
+ * the otpauth:// URLs to add to an authenticator app (only needed if REQUIRE_2FA=true).
  * Run: npm run db:seed
  */
 import { authenticator } from 'otplib';
@@ -19,10 +20,11 @@ const people = [
   { name: 'Peter Mushi', email: 'peter@partner.co.tz', role: 'viewer', twoFactor: false },
 ];
 
+const with2fa = process.env.SEED_2FA === 'true';
 const passwordHash = await hashPassword('ChangeMe123!');
 
 for (const p of people) {
-  const totpSecret = p.twoFactor ? authenticator.generateSecret() : null;
+  const totpSecret = with2fa && p.twoFactor ? authenticator.generateSecret() : null;
   await db
     .insert(users)
     .values({ name: p.name, email: p.email, role: p.role, passwordHash, totpSecret })
@@ -30,7 +32,7 @@ for (const p of people) {
   if (totpSecret) {
     console.log(`${p.email.padEnd(24)} ${authenticator.keyuri(p.email, 'MSL', totpSecret)}`);
   } else {
-    console.log(`${p.email.padEnd(24)} (2FA off — cannot sign in until enrolled)`);
+    console.log(`${p.email.padEnd(24)} ${p.role}`);
   }
 }
 

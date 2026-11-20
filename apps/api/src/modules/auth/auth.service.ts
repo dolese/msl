@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { authenticator } from 'otplib';
 import type { LoginInput } from '@msl/shared';
+import { env } from '../../config/env.js';
 import { db } from '../../db/client.js';
 import { sessions, users } from '../../db/schema.js';
 import { randomToken, sha256, verifyPassword } from '../../lib/crypto.js';
@@ -16,13 +17,14 @@ export async function signIn(input: LoginInput, ip: string | undefined) {
   const email = input.email.toLowerCase();
   const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   // Same generic error for unknown user / bad password / bad code — no account enumeration.
-  const fail = unauthorized('Invalid email, password or code');
+  const fail = unauthorized(env().REQUIRE_2FA ? 'Invalid email, password or code' : 'Invalid email or password');
 
   if (!user) throw fail;
   if (user.lockedAt) throw new HttpError(423, 'Account locked. Contact an administrator.');
 
   const passwordOk = await verifyPassword(input.password, user.passwordHash);
-  const totpOk = !!user.totpSecret && authenticator.check(input.totp, user.totpSecret);
+  const require2fa = env().REQUIRE_2FA;
+  const totpOk = !require2fa || (!!user.totpSecret && !!input.totp && authenticator.check(input.totp, user.totpSecret));
 
   if (!passwordOk || !totpOk) {
     const [updated] = await db
@@ -47,7 +49,7 @@ export async function signIn(input: LoginInput, ip: string | undefined) {
     csrfToken,
     expiresAt: new Date(Date.now() + SESSION_TTL_MS),
   });
-  await audit({ action: 'auth.sign_in', actorId: user.id, detail: '2FA verified', ip });
+  await audit({ action: 'auth.sign_in', actorId: user.id, detail: require2fa ? '2FA verified' : null, ip });
 
   return {
     token,

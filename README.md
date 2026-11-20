@@ -60,7 +60,7 @@ msl/
 │   │       │   ├── rate-limit.ts
 │   │       │   └── error.ts
 │   │       ├── modules/         # one folder per feature: *.routes.ts + *.service.ts
-│   │       │   ├── auth/        # login (password + TOTP), lockout after 5 fails, logout
+│   │       │   ├── auth/        # login (password, optional TOTP), lockout after 5 fails, logout
 │   │       │   ├── records/     # list/search, create, reveal ID, verify, photo, CSV export, history
 │   │       │   ├── share/       # create link (hashed token) + public read-only endpoint
 │   │       │   ├── users/       # list, invite, change role, unlock
@@ -77,7 +77,7 @@ msl/
 │           ├── lib/                      # date/phone formatting, audit event labels
 │           ├── components/               # AppHeader, AppLayout, Avatar, Badge, Chip, Pagination, RequireAuth
 │           ├── pages/
-│           │   ├── LoginPage.tsx         # email + password + 2FA code
+│           │   ├── LoginPage.tsx         # email + password (+ 2FA code when enabled)
 │           │   ├── RecordsPage.tsx       # search, filters, pagination, New / Export
 │           │   ├── NewRegistrationPage.tsx
 │           │   ├── RecordDetailPage.tsx  # reveal ID, share link, activity history
@@ -98,8 +98,9 @@ rebuild loop. `npm run build` emits `packages/shared/dist` for production Node.
   decrypting. Only the last 2 digits are stored in clear for masking. The full value is
   returned only by `POST /records/:id/reveal-id` (admin only, `Cache-Control: no-store`) and
   every reveal is audited.
-- **Sign-in** requires password (scrypt) + TOTP. 5 failures lock the account; the error message
-  never reveals which factor was wrong.
+- **Sign-in** is email + password (scrypt). 5 failures lock the account; the error never says
+  whether the email or the password was wrong. **2FA is built but off**: set `REQUIRE_2FA=true`
+  to require an authenticator code for everyone (users then need a TOTP secret, see below).
 - **Sessions:** random token in an `HttpOnly; SameSite=Strict` cookie (`Secure` in production);
   only its SHA-256 is stored. Every non-GET request must carry the session's `X-CSRF-Token`.
 - **Share links:** 1 h / 24 h / 7 d; only the token hash is stored; the public endpoint returns
@@ -114,12 +115,14 @@ cp .env.example .env              # then fill ID_ENCRYPTION_KEY and ID_HASH_KEY 
 docker compose up -d db
 npm install
 npm run db:migrate
-npm run db:seed                   # prints otpauth:// URLs — add them to an authenticator app
+npm run db:seed                   # creates the demo users
 npm run dev                       # API :4000, web :5173
 ```
 
-Demo password for seeded users: `ChangeMe123!`. Users seeded with 2FA off can't sign in
-until TOTP enrolment is built (see TODO in `users.service.ts`).
+Demo password for seeded users: `ChangeMe123!`.
+
+To try 2FA: set `REQUIRE_2FA=true`, then seed with `SEED_2FA=true npm run db:seed`. That
+prints `otpauth://` URLs to add to an authenticator app for James, Sarah and Halima.
 
 ## Deploying to Railway + Cloudflare R2
 
@@ -166,7 +169,8 @@ silently land on Railway's temporary disk.
 | `npm run db:generate -w @msl/api` | new migration after editing `schema.ts` |
 
 ## Not built yet
-- Invite email + password set + TOTP enrolment flow (invite currently creates the user only)
+- Invite email + set-password flow (invite currently creates the user only, so invited users
+  can't sign in yet). TOTP enrolment, for when 2FA is switched on.
 - Registrar / date filters in the records list (chips are placeholders); user filter in the audit log
 - Record edit form in the web UI (API `PATCH /records/:id` exists)
 - Redis-backed rate limiting for multi-instance deployments

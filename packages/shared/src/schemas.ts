@@ -4,7 +4,8 @@ import { ROLES } from './roles.js';
 export const loginSchema = z.object({
   email: z.email(),
   password: z.string().min(8),
-  totp: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code'),
+  /** Only required when 2FA is switched on (REQUIRE_2FA=true on the API). */
+  totp: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code').optional(),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
