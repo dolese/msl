@@ -1,6 +1,6 @@
 import {
   ArrowDownToLine, CheckCircle2, Eye, FilePlus2, KeyRound, Link2, Lock, LogIn, LogOut, Pencil, ShieldAlert,
-  UserCog, UserPlus, type LucideIcon,
+  UserCog, UserPlus, XCircle, type LucideIcon,
 } from 'lucide-react';
 import type { AuditAction, AuditEventDTO } from '@msl/shared';
 import { shortName } from './format';
@@ -14,6 +14,7 @@ const META: Record<AuditAction, { verb: string; icon: LucideIcon; tone: Tone }> 
   'record.created': { verb: 'registered a person', icon: FilePlus2, tone: 'success' },
   'record.updated': { verb: 'edited a record', icon: Pencil, tone: 'info' },
   'record.verified': { verb: 'verified a record', icon: CheckCircle2, tone: 'success' },
+  'record.rejected': { verb: 'rejected a record', icon: XCircle, tone: 'danger' },
   'record.id_revealed': { verb: 'revealed an ID number', icon: Eye, tone: 'warning' },
   'record.photo_downloaded': { verb: 'downloaded a photo', icon: ArrowDownToLine, tone: 'warning' },
   'record.exported': { verb: 'exported records', icon: ArrowDownToLine, tone: 'primary' },

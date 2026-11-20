@@ -1,5 +1,5 @@
 import type {
-  AuditEventDTO, LoginInput, Paginated, RecordDTO, Role, SharedRecordDTO, ShareTtl, UserDTO,
+  AuditEventDTO, DashboardDTO, LoginInput, Paginated, RecordDTO, Role, SharedRecordDTO, ShareTtl, UserDTO,
 } from '@msl/shared';
 
 export class ApiError extends Error {
@@ -44,6 +44,8 @@ export const api = {
 
   listRecords: (p: { q?: string; status?: string; page?: number }) =>
     request<Paginated<RecordDTO>>(`/records${qs(p)}`),
+  dashboard: () => request<DashboardDTO>('/dashboard'),
+  reject: (id: string, reason?: string) => request<void>(`/records/${id}/reject`, { method: 'POST', body: JSON.stringify({ reason }) }),
   stats: () => request<{ total: number; verified: number; pending: number; rejected: number }>('/records/stats'),
   getRecord: (id: string) => request<RecordDTO>(`/records/${id}`),
   createRecord: (form: FormData) => request<RecordDTO>('/records', { method: 'POST', body: form }),

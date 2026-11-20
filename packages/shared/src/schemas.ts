@@ -46,6 +46,10 @@ export const listRecordsQuery = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+export const rejectRecordSchema = z.object({
+  reason: z.string().trim().max(300).optional(),
+});
+
 export const SHARE_TTLS = { '1h': 3600, '24h': 86400, '7d': 604800 } as const;
 export type ShareTtl = keyof typeof SHARE_TTLS;
 export const createShareSchema = z.object({

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Clock, Download, FolderOpen, Plus, Search, Users, XCircle } from 'lucide-react';
 import { RECORD_STATUSES, type RecordStatus } from '@msl/shared';
 import { api } from '../api/client';
@@ -23,7 +23,9 @@ export function RecordsPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const q = useDebounced(query);
-  const [status, setStatus] = useState<RecordStatus | ''>('');
+  const [params] = useSearchParams();
+  const initial = params.get('status');
+  const [status, setStatus] = useState<RecordStatus | ''>(RECORD_STATUSES.includes(initial as RecordStatus) ? (initial as RecordStatus) : '');
   const [page, setPage] = useState(1);
   const list = useAsync(() => api.listRecords({ q, status: status || undefined, page }), [q, status, page]);
   const stats = useAsync(() => api.stats(), []);

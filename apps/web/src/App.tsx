@@ -10,6 +10,7 @@ import { UsersPage } from './pages/UsersPage';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { SharedRecordPage } from './pages/SharedRecordPage';
 import { AccountPage } from './pages/AccountPage';
+import { DashboardPage } from './pages/DashboardPage';
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/s/:token" element={<SharedRecordPage />} />
           <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/records" element={<RecordsPage />} />
             <Route path="/records/new" element={<RequireAuth permission="records:create"><NewRegistrationPage /></RequireAuth>} />
             <Route path="/records/:id" element={<RecordDetailPage />} />
@@ -26,7 +28,7 @@ export function App() {
             <Route path="/account" element={<AccountPage />} />
             <Route path="/audit" element={<RequireAuth permission="audit:read"><AuditLogPage /></RequireAuth>} />
           </Route>
-          <Route path="*" element={<Navigate to="/records" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

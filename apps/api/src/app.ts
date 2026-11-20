@@ -13,6 +13,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { recordsRouter } from './modules/records/records.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 import { auditRouter } from './modules/audit/audit.routes.js';
+import { dashboardRouter } from './modules/dashboard/dashboard.routes.js';
 import { publicShareRouter } from './modules/share/share.routes.js';
 
 export function createApp() {
@@ -52,6 +53,7 @@ export function createApp() {
   app.use('/api/records', requireAuth, recordsRouter);
   app.use('/api/users', requireAuth, usersRouter);
   app.use('/api/audit', requireAuth, auditRouter);
+  app.use('/api/dashboard', requireAuth, dashboardRouter);
 
   app.use('/api', (_req, _res, next) => next(notFound()));
   serveWebApp(app);

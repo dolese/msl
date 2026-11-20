@@ -11,7 +11,7 @@ import { useAuth } from '../hooks/useAuth';
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const from = (useLocation().state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/records';
+  const from = (useLocation().state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
   const [form, setForm] = useState({ email: '', password: '', totp: '' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

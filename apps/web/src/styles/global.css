@@ -288,6 +288,21 @@ button { font: inherit; cursor: pointer; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- Dashboard ---------- */
+:root { --chart-bar: #9aabe0; --chart-grid: #eef0f3; }
+.grid-dash { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 1100px) { .grid-dash { grid-template-columns: 1fr; } }
+.stats .stat > div:last-child { min-width: 0; }
+@media (max-width: 640px) { .stats .stat { flex-direction: column; align-items: flex-start; gap: 10px; } }
+.trend { font-size: 12.5px; color: var(--text-3); margin-top: 2px; display: flex; align-items: center; gap: 2px; }
+.trend-up { color: var(--success); font-weight: 600; }
+.trend-down { color: var(--danger); font-weight: 600; }
+.chart { position: relative; }
+.chart rect[tabindex]:focus { outline: none; }
+.chart-tip { position: absolute; transform: translate(-50%, calc(-100% - 10px)); background: var(--navy-950); color: #fff; font-size: 13px; padding: 7px 11px; border-radius: 8px; pointer-events: none; white-space: nowrap; box-shadow: var(--shadow-sm); }
+.chart-tip strong { font-size: 15px; margin-right: 4px; }
+.chart-tip span { display: block; color: #aab5d3; font-size: 12px; }
+
 /* ---------- Detail ---------- */
 .profile-photo { aspect-ratio: 16 / 9; max-height: 320px; background: linear-gradient(135deg, var(--navy-900), var(--navy-800)); border-radius: var(--radius) var(--radius) 0 0; display: grid; place-items: center; position: relative; overflow: hidden; }
 .profile-photo img { width: 100%; height: 100%; object-fit: cover; }

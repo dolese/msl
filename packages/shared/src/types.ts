@@ -37,6 +37,7 @@ export const AUDIT_ACTIONS = [
   'record.created',
   'record.updated',
   'record.verified',
+  'record.rejected',
   'record.id_revealed',
   'record.photo_downloaded',
   'record.exported',
@@ -67,4 +68,24 @@ export interface SharedRecordDTO {
   registeredAt: string;
   photoUrl: string | null;
   expiresAt: string;
+}
+
+export interface DashboardDTO {
+  kpis: {
+    thisMonth: number;
+    /** Same days of last month (1st..today), for a fair comparison */
+    lastMonthToDate: number;
+    pending: number;
+    pendingOlderThan2Days: number;
+    verified: number;
+    total: number;
+    activeShareLinks: number;
+    shareLinksExpiringIn24h: number;
+  };
+  /** Last 12 weeks (Monday start, Africa/Dar_es_Salaam), oldest first */
+  weekly: { weekStart: string; count: number }[];
+  /** Oldest pending records first */
+  reviewQueue: RecordDTO[];
+  /** Latest audit events; null when the user may not read the audit log */
+  activity: AuditEventDTO[] | null;
 }

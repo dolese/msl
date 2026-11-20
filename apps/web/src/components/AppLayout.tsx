@@ -1,15 +1,16 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { FolderOpen, LogOut, ScrollText, Settings, UserPlus, Users, type LucideIcon } from 'lucide-react';
+import { FolderOpen, LayoutDashboard, LogOut, ScrollText, Settings, UserPlus, Users, type LucideIcon } from 'lucide-react';
 import type { Permission } from '@msl/shared';
 import { useAuth } from '../hooks/useAuth';
 import { Avatar } from './Avatar';
 import { BrandLockup, BrandMark } from './BrandMark';
 
-const NAV: { to: string; label: string; short: string; icon: LucideIcon; permission?: Permission; end?: boolean }[] = [
+const NAV: { to: string; label: string; short: string; icon: LucideIcon; permission?: Permission; end?: boolean; mobile?: boolean }[] = [
+  { to: '/dashboard', label: 'Dashboard', short: 'Home', icon: LayoutDashboard },
   { to: '/records', label: 'Records', short: 'Records', icon: FolderOpen, end: true },
   { to: '/records/new', label: 'New registration', short: 'Register', icon: UserPlus, permission: 'records:create' },
   { to: '/users', label: 'Users & roles', short: 'Users', icon: Users, permission: 'users:manage' },
-  { to: '/audit', label: 'Audit log', short: 'Audit', icon: ScrollText, permission: 'audit:read' },
+  { to: '/audit', label: 'Audit log', short: 'Audit', icon: ScrollText, permission: 'audit:read', mobile: false },
 ];
 
 export function AppLayout() {
@@ -47,7 +48,7 @@ export function AppLayout() {
       </div>
 
       <nav className="bottom-nav" aria-label="Main navigation">
-        {items.map(({ to, short, icon: Icon, end }) => (
+        {items.filter((n) => n.mobile !== false).map(({ to, short, icon: Icon, end }) => (
           <NavLink key={to} to={to} end={end}><Icon size={21} />{short}</NavLink>
         ))}
         <NavLink to="/account"><Settings size={21} />Account</NavLink>

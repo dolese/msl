@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { createRecordSchema, createShareSchema, listRecordsQuery, updateRecordSchema } from '@msl/shared';
+import { createRecordSchema, createShareSchema, listRecordsQuery, rejectRecordSchema, updateRecordSchema } from '@msl/shared';
 import { requirePermission } from '../../middleware/auth.js';
 import { audit } from '../../lib/audit.js';
 import { notFound } from '../../lib/http-error.js';
@@ -58,6 +58,14 @@ recordsRouter.post('/:id/verify', requirePermission('records:verify'), async (re
   const { id } = idParam.parse(req.params);
   const row = await svc.setStatus(id, 'verified');
   await audit({ action: 'record.verified', actorId: req.user!.id, recordId: id, targetLabel: row.fullName, ip: req.ip });
+  res.status(204).end();
+});
+
+recordsRouter.post('/:id/reject', requirePermission('records:verify'), async (req, res) => {
+  const { id } = idParam.parse(req.params);
+  const { reason } = rejectRecordSchema.parse(req.body ?? {});
+  const row = await svc.setStatus(id, 'rejected');
+  await audit({ action: 'record.rejected', actorId: req.user!.id, recordId: id, targetLabel: row.fullName, detail: reason || null, ip: req.ip });
   res.status(204).end();
 });
 

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CalendarDays, Check, CheckCircle2, Copy, Download, Eye, EyeOff, History, IdCard, Link2, Phone, ShieldCheck, UserRound } from 'lucide-react';
+import { XCircle, CalendarDays, Check, CheckCircle2, Copy, Download, Eye, EyeOff, History, IdCard, Link2, Phone, ShieldCheck, UserRound } from 'lucide-react';
 import type { ShareTtl } from '@msl/shared';
 import { api, ApiError } from '../api/client';
 import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/Badge';
 import { Alert, EmptyState, Loading } from '../components/Feedback';
 import { PageHeader } from '../components/PageHeader';
+import { RejectModal } from '../components/RejectModal';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../hooks/useAuth';
 import { describeEvent } from '../lib/audit-labels';
@@ -24,6 +25,7 @@ export function RecordDetailPage() {
   const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [rejecting, setRejecting] = useState(false);
 
   useEffect(() => {
     if (!revealed) return;
@@ -58,9 +60,10 @@ export function RecordDetailPage() {
         back={{ to: '/records', label: 'Records' }}
         title={<span className="row wrap">{r.fullName} <StatusBadge value={r.status} /></span>}
         description={`Registered ${formatDate(r.createdAt)} by ${r.registeredBy.name}`}
-        actions={r.status === 'pending' && can('records:verify') && (
+        actions={r.status === 'pending' && can('records:verify') && (<>
+          <button className="btn btn-secondary" onClick={() => setRejecting(true)}><XCircle size={17} /> Reject</button>
           <button className="btn btn-success" onClick={verify}><CheckCircle2 size={17} /> Mark as verified</button>
-        )}
+        </>)}
       />
       {actionError && <div style={{ marginBottom: 16 }}><Alert kind="error">{actionError}</Alert></div>}
 
@@ -145,6 +148,8 @@ export function RecordDetailPage() {
           </div>
         </div>
       </div>
+      {rejecting && <RejectModal id={r.id} name={r.fullName} onClose={() => setRejecting(false)}
+        onDone={() => { setRejecting(false); record.reload(); history.reload(); }} />}
     </>
   );
 }
