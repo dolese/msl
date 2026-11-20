@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --conditions=source src/index.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "npm run build --workspace @msl/shared && npm run build --workspace @msl/web && tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
