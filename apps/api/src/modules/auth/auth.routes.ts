@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { loginSchema } from '@msl/shared';
+import { changePasswordSchema, loginSchema } from '@msl/shared';
 import { env, isProd } from '../../config/env.js';
 import { requireAuth, SESSION_COOKIE } from '../../middleware/auth.js';
 import { rateLimit } from '../../middleware/rate-limit.js';
-import { SESSION_TTL_MS, signIn, signOut } from './auth.service.js';
+import { changePassword, SESSION_TTL_MS, signIn, signOut } from './auth.service.js';
 
 export const authRouter = Router();
 
@@ -27,6 +27,12 @@ authRouter.post('/login', rateLimit({ windowMs: 15 * 60_000, max: 20 }), async (
 
 authRouter.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.user, csrfToken: req.session!.csrfToken });
+});
+
+authRouter.post('/password', requireAuth, rateLimit({ windowMs: 15 * 60_000, max: 10 }), async (req, res) => {
+  const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+  await changePassword(req.user!.id, req.session!.id, currentPassword, newPassword, req.ip);
+  res.status(204).end();
 });
 
 authRouter.post('/logout', requireAuth, async (req, res) => {

@@ -1,12 +1,12 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, ne, sql } from 'drizzle-orm';
 import { authenticator } from 'otplib';
 import type { LoginInput } from '@msl/shared';
 import { env } from '../../config/env.js';
 import { db } from '../../db/client.js';
 import { sessions, users } from '../../db/schema.js';
-import { randomToken, sha256, verifyPassword } from '../../lib/crypto.js';
+import { hashPassword, randomToken, sha256, verifyPassword } from '../../lib/crypto.js';
 import { audit } from '../../lib/audit.js';
-import { HttpError, unauthorized } from '../../lib/http-error.js';
+import { badRequest, HttpError, unauthorized } from '../../lib/http-error.js';
 
 export const MAX_FAILED_LOGINS = 5;
 export const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8h
@@ -61,4 +61,13 @@ export async function signIn(input: LoginInput, ip: string | undefined) {
 export async function signOut(sessionId: string, userId: string, ip?: string) {
   await db.delete(sessions).where(eq(sessions.id, sessionId));
   await audit({ action: 'auth.sign_out', actorId: userId, ip });
+}
+
+/** Changes the signed-in user's password and signs out their other sessions. */
+export async function changePassword(userId: string, sessionId: string, current: string, next: string, ip?: string) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  if (!user || !(await verifyPassword(current, user.passwordHash))) throw badRequest('Current password is incorrect');
+  await db.update(users).set({ passwordHash: await hashPassword(next) }).where(eq(users.id, userId));
+  await db.delete(sessions).where(and(eq(sessions.userId, userId), ne(sessions.id, sessionId)));
+  await audit({ action: 'user.password_changed', actorId: userId, targetLabel: user.email, ip });
 }

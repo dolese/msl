@@ -17,6 +17,7 @@ const META: Record<AuditAction, { verb: string; icon: string; tone: Tone }> = {
   'share.viewed': { verb: 'share link opened', icon: '👁', tone: 'blue' },
   'user.invited': { verb: 'invited user', icon: '+', tone: 'green' },
   'user.role_changed': { verb: 'changed role', icon: '⇄', tone: 'amber' },
+  'user.password_changed': { verb: 'changed password', icon: '🔑', tone: 'blue' },
 };
 
 export function describeEvent(e: AuditEventDTO) {

@@ -44,6 +44,7 @@ export const AUDIT_ACTIONS = [
   'share.viewed',
   'user.invited',
   'user.role_changed',
+  'user.password_changed',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

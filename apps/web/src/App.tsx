@@ -9,6 +9,7 @@ import { RecordDetailPage } from './pages/RecordDetailPage';
 import { UsersPage } from './pages/UsersPage';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { SharedRecordPage } from './pages/SharedRecordPage';
+import { AccountPage } from './pages/AccountPage';
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
             <Route path="/records/new" element={<RequireAuth permission="records:create"><NewRegistrationPage /></RequireAuth>} />
             <Route path="/records/:id" element={<RecordDetailPage />} />
             <Route path="/users" element={<RequireAuth permission="users:manage"><UsersPage /></RequireAuth>} />
+            <Route path="/account" element={<AccountPage />} />
             <Route path="/audit" element={<RequireAuth permission="audit:read"><AuditLogPage /></RequireAuth>} />
           </Route>
           <Route path="*" element={<Navigate to="/records" replace />} />

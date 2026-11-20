@@ -11,6 +11,10 @@ const schema = z.object({
   ID_ENCRYPTION_KEY: base64Key,
   ID_HASH_KEY: base64Key,
   /** 2FA (authenticator code at sign-in). Off for now; set to "true" to require it for everyone. */
+  /** First admin, created on startup only when the users table is empty. */
+  ADMIN_EMAIL: z.email().optional(),
+  ADMIN_PASSWORD: z.string().min(10, 'must be at least 10 characters').optional(),
+  ADMIN_NAME: z.string().default('Administrator'),
   REQUIRE_2FA: z.enum(['true', 'false']).default('false').transform((v) => v === 'true'),
   WEB_ORIGIN: z.preprocess(
     (v) => v ?? (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : undefined),

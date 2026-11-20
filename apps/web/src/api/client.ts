@@ -39,6 +39,8 @@ export const api = {
   authConfig: () => request<{ twoFactorRequired: boolean }>('/auth/config'),
   me: () => request<{ user: SessionUser; csrfToken: string }>('/auth/me'),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
+  changePassword: (body: { currentPassword: string; newPassword: string }) =>
+    request<void>('/auth/password', { method: 'POST', body: JSON.stringify(body) }),
 
   listRecords: (p: { q?: string; status?: string; page?: number }) =>
     request<Paginated<RecordDTO>>(`/records${qs(p)}`),
@@ -53,7 +55,7 @@ export const api = {
   exportUrl: '/api/records/export.csv',
 
   listUsers: () => request<UserDTO[]>('/users'),
-  inviteUser: (body: { name: string; email: string; role: Role }) =>
+  inviteUser: (body: { name: string; email: string; role: Role; password: string }) =>
     request<UserDTO>('/users', { method: 'POST', body: JSON.stringify(body) }),
 
   listAudit: (p: { q?: string; userId?: string; days?: number; page?: number }) =>

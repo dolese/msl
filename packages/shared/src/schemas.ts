@@ -52,11 +52,19 @@ export const createShareSchema = z.object({
   ttl: z.enum(Object.keys(SHARE_TTLS) as [ShareTtl, ...ShareTtl[]]),
 });
 
+export const passwordRule = z.string().min(10, 'Use at least 10 characters').max(200);
+
 export const inviteUserSchema = z.object({
   name: z.string().trim().min(2).max(80),
   email: z.email(),
   role: z.enum(ROLES),
+  /** Temporary password the admin gives the new user; they change it under Account. */
+  password: passwordRule,
 });
+
+export const changePasswordSchema = z
+  .object({ currentPassword: z.string().min(1, 'Enter your current password'), newPassword: passwordRule })
+  .refine((v) => v.currentPassword !== v.newPassword, { path: ['newPassword'], message: 'Choose a different password' });
 
 export const auditQuery = z.object({
   q: z.string().trim().max(100).optional(),

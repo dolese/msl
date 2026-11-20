@@ -2,7 +2,7 @@ import { asc, eq } from 'drizzle-orm';
 import type { Role, UserDTO } from '@msl/shared';
 import { db } from '../../db/client.js';
 import { users } from '../../db/schema.js';
-import { hashPassword, randomToken } from '../../lib/crypto.js';
+import { hashPassword } from '../../lib/crypto.js';
 import { conflict, notFound } from '../../lib/http-error.js';
 
 const toDTO = (u: typeof users.$inferSelect): UserDTO => ({
@@ -15,15 +15,15 @@ export async function listUsers(): Promise<UserDTO[]> {
 }
 
 /**
- * Creates the user with a random unusable password.
- * TODO: email an invite link where they set a password and enrol TOTP.
+ * Creates the user with a temporary password chosen by the admin, who passes it on.
+ * The user should change it under Account after signing in.
  */
-export async function inviteUser(input: { name: string; email: string; role: Role }) {
+export async function inviteUser(input: { name: string; email: string; role: Role; password: string }) {
   const email = input.email.toLowerCase();
   const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
   if (existing) throw conflict('A user with this email already exists');
   const [row] = await db.insert(users)
-    .values({ name: input.name, email, role: input.role, passwordHash: await hashPassword(randomToken()) })
+    .values({ name: input.name, email, role: input.role, passwordHash: await hashPassword(input.password) })
     .returning();
   return toDTO(row!);
 }

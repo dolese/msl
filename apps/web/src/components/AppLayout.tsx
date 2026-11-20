@@ -11,6 +11,7 @@ export function AppLayout() {
         {can('records:create') && <NavLink to="/records/new">New</NavLink>}
         {can('users:manage') && <NavLink to="/users">Users</NavLink>}
         {can('audit:read') && <NavLink to="/audit">Audit</NavLink>}
+        <NavLink to="/account">Account</NavLink>
         <button className="link" onClick={logout}>Sign out</button>
       </nav>
     </div>

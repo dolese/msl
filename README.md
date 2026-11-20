@@ -151,8 +151,11 @@ permission check, never via a public bucket URL.
    | `WEB_ORIGIN` | only if you use a custom domain (otherwise the Railway domain is used) |
 
 4. *Settings* → *Networking* → **Generate Domain**.
-5. Create the first users once: run `npm run db:seed` with the production variables
-   (e.g. `railway run npm run db:seed`), then change the passwords.
+5. **First admin:** add `ADMIN_EMAIL` and `ADMIN_PASSWORD` (10+ characters) to the
+   variables and redeploy. On startup, while the database has no users, the app creates
+   that admin. Sign in, change the password under **Account**, then delete
+   `ADMIN_PASSWORD` from Railway. Add everyone else from **Users → + Invite** with a
+   temporary password they change under Account.
 
 In production the app refuses to start if any R2 variable is missing, so photos can't
 silently land on Railway's temporary disk.
@@ -169,8 +172,8 @@ silently land on Railway's temporary disk.
 | `npm run db:generate -w @msl/api` | new migration after editing `schema.ts` |
 
 ## Not built yet
-- Invite email + set-password flow (invite currently creates the user only, so invited users
-  can't sign in yet). TOTP enrolment, for when 2FA is switched on.
+- Invite by email (today the admin sets a temporary password and passes it on) and a
+  forced password change on first sign-in. TOTP enrolment, for when 2FA is switched on.
 - Registrar / date filters in the records list (chips are placeholders); user filter in the audit log
 - Record edit form in the web UI (API `PATCH /records/:id` exists)
 - Redis-backed rate limiting for multi-instance deployments
