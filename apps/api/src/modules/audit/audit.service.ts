@@ -8,7 +8,7 @@ import { auditEvents, users } from '../../db/schema.js';
 
 const actor = alias(users, 'actor');
 
-const toDTO = (r: { e: typeof auditEvents.$inferSelect; actor: { id: string; name: string } | null }): AuditEventDTO => ({
+const toDTO = (r: { e: typeof auditEvents.$inferSelect; actor: { id: string; name: string; kind: 'person' | 'team' } | null }): AuditEventDTO => ({
   id: r.e.id,
   action: r.e.action as AuditAction,
   actor: r.actor,
@@ -26,7 +26,7 @@ export async function listAudit(q: z.infer<typeof auditQuery>): Promise<Paginate
     filters.push(or(ilike(auditEvents.action, like), ilike(auditEvents.targetLabel, like), ilike(actor.name, like))!);
   }
   const where = and(...filters);
-  const base = () => db.select({ e: auditEvents, actor: { id: actor.id, name: actor.name } })
+  const base = () => db.select({ e: auditEvents, actor: { id: actor.id, name: actor.name, kind: actor.kind } })
     .from(auditEvents).leftJoin(actor, eq(actor.id, auditEvents.actorId));
 
   const [rows, [totalRow]] = await Promise.all([
@@ -37,7 +37,7 @@ export async function listAudit(q: z.infer<typeof auditQuery>): Promise<Paginate
 }
 
 export async function listRecordHistory(recordId: string): Promise<AuditEventDTO[]> {
-  const rows = await db.select({ e: auditEvents, actor: { id: actor.id, name: actor.name } })
+  const rows = await db.select({ e: auditEvents, actor: { id: actor.id, name: actor.name, kind: actor.kind } })
     .from(auditEvents).leftJoin(actor, eq(actor.id, auditEvents.actorId))
     .where(eq(auditEvents.recordId, recordId)).orderBy(auditEvents.createdAt);
   return rows.map(toDTO);

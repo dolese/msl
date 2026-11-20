@@ -1,9 +1,18 @@
 import { z } from 'zod';
 import { ROLES } from './roles.js';
 
+/** Team account usernames: lowercase letters, numbers, dot, dash, underscore. */
+export const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,31}$/;
+export const usernameRule = z
+  .string()
+  .trim()
+  .transform((v) => v.toLowerCase())
+  .refine((v) => USERNAME_RE.test(v), '3–32 characters: lowercase letters, numbers, dot, dash or underscore');
+
 export const loginSchema = z.object({
-  email: z.email(),
-  password: z.string().min(8),
+  /** Email address (people) or username (team accounts) */
+  login: z.string().trim().min(3, 'Enter your email or username').transform((v) => v.toLowerCase()),
+  password: z.string().min(1, 'Enter your password'),
   /** Only required when 2FA is switched on (REQUIRE_2FA=true on the API). */
   totp: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code').optional(),
 });
@@ -16,16 +25,30 @@ export const tzPhone = z
   .refine((v) => /^(\+255|0)[67]\d{8}$/.test(v), 'Enter a valid Tanzanian phone number')
   .transform((v) => (v.startsWith('0') ? `+255${v.slice(1)}` : v));
 
-/** NIDA format: YYYYMMDD-XXXXX-XXXXX-XX */
+/**
+ * NIDA number: 20 digits, typed with or without dashes/spaces
+ * (19881020456060000314 or 19881020-45606-00003-14). Always stored in the
+ * dashed form so duplicate detection stays consistent.
+ */
 export const nationalId = z
   .string()
-  .trim()
-  .regex(/^\d{8}-\d{5}-\d{5}-\d{2}$/, 'Format: YYYYMMDD-XXXXX-XXXXX-XX');
+  .transform((v) => v.replace(/[\s-]/g, ''))
+  .refine((v) => /^\d{20}$/.test(v), 'NIDA number must have 20 digits')
+  .transform((v) => `${v.slice(0, 8)}-${v.slice(8, 13)}-${v.slice(13, 18)}-${v.slice(18)}`);
+
+/** Idadi ya vipande: number of plots, a whole number 0–999 */
+export const plotsRule = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+  z.number({ error: 'Enter the number of plots' }).int('Whole numbers only').min(0, 'Cannot be negative').max(999, 'Too large'),
+);
 
 export const createRecordSchema = z.object({
   fullName: z.string().trim().min(3).max(120),
   phone: tzPhone,
   nationalId,
+  plots: plotsRule,
+  /** Name of the field officer (Msajili); required when signed in with a team account */
+  fieldOfficer: z.string().trim().max(80).optional(),
   consent: z.literal(true, { error: 'Consent is required under Tanzania PDPA' }),
 });
 export type CreateRecordInput = z.input<typeof createRecordSchema>;
@@ -33,6 +56,7 @@ export type CreateRecordInput = z.input<typeof createRecordSchema>;
 export const updateRecordSchema = z.object({
   fullName: z.string().trim().min(3).max(120).optional(),
   phone: tzPhone.optional(),
+  plots: plotsRule.optional(),
 });
 
 export const RECORD_STATUSES = ['pending', 'verified', 'rejected'] as const;
@@ -58,13 +82,15 @@ export const createShareSchema = z.object({
 
 export const passwordRule = z.string().min(10, 'Use at least 10 characters').max(200);
 
-export const inviteUserSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  email: z.email(),
-  role: z.enum(ROLES),
-  /** Temporary password the admin gives the new user; they change it under Account. */
-  password: passwordRule,
-});
+const accountBase = { name: z.string().trim().min(2).max(80), role: z.enum(ROLES), password: passwordRule };
+/** Admin creates either a person (signs in with email) or a team account (signs in with username). */
+export const inviteUserSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('person'), email: z.email().transform((v) => v.toLowerCase()), ...accountBase }),
+  z.object({ kind: z.literal('team'), username: usernameRule, ...accountBase }),
+]);
+export type InviteUserInput = z.input<typeof inviteUserSchema>;
+
+export const resetPasswordSchema = z.object({ password: passwordRule });
 
 export const changePasswordSchema = z
   .object({ currentPassword: z.string().min(1, 'Enter your current password'), newPassword: passwordRule })

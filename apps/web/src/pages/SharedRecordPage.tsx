@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { CalendarDays, Clock, IdCard, LinkIcon, Phone, ShieldCheck } from 'lucide-react';
+import { CalendarDays, Clock, Hash, IdCard, LinkIcon, MapPinned, Phone, ShieldCheck } from 'lucide-react';
 import { api } from '../api/client';
 import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/Badge';
@@ -42,8 +42,10 @@ export function SharedRecordPage() {
                   <StatusBadge value={data.status} />
                 </div>
                 <dl className="dl">
+                  <div><dt><Hash size={17} /> Registration no.</dt><dd className="mono">{data.regNo}</dd></div>
                   <div><dt><Phone size={17} /> Phone</dt><dd>{formatPhone(data.phone)}</dd></div>
                   <div><dt><IdCard size={17} /> National ID</dt><dd className="masked">{formatMaskedId(data.nationalIdMasked)}</dd></div>
+                  <div><dt><MapPinned size={17} /> Plots</dt><dd>{data.plots ?? '—'}</dd></div>
                   <div><dt><CalendarDays size={17} /> Registered</dt><dd>{formatDate(data.registeredAt)}</dd></div>
                 </dl>
               </div>

@@ -1,8 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { can, type LoginInput, type Permission, type Role } from '@msl/shared';
-import { api, setCsrfToken } from '../api/client';
+import { can, type LoginInput, type Permission } from '@msl/shared';
+import { api, setCsrfToken, type SessionUser } from '../api/client';
 
-type User = { id: string; name: string; email: string; role: Role };
+type User = SessionUser;
 interface AuthState {
   user: User | null;
   loading: boolean;

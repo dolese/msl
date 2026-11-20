@@ -1,5 +1,5 @@
 import { and, eq, gt } from 'drizzle-orm';
-import { maskNationalId, SHARE_TTLS, type SharedRecordDTO, type ShareTtl } from '@msl/shared';
+import { formatRegNo, maskNationalId, SHARE_TTLS, type SharedRecordDTO, type ShareTtl } from '@msl/shared';
 import { db } from '../../db/client.js';
 import { records, shareLinks } from '../../db/schema.js';
 import { randomToken, sha256 } from '../../lib/crypto.js';
@@ -27,6 +27,8 @@ export async function resolveShareToken(token: string) {
 
 export function toSharedDTO(row: Awaited<ReturnType<typeof resolveShareToken>>, token: string): SharedRecordDTO {
   return {
+    regNo: formatRegNo(row.record.seq, row.record.createdAt),
+    plots: row.record.plots,
     fullName: row.record.fullName,
     phone: row.record.phone,
     nationalIdMasked: maskNationalId(row.record.nationalIdLast2),

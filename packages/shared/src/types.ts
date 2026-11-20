@@ -11,20 +11,31 @@ export interface Paginated<T> {
 export interface UserDTO {
   id: string;
   name: string;
-  email: string;
+  kind: AccountKind;
+  /** People sign in with email; team accounts with username */
+  email: string | null;
+  username: string | null;
   role: Role;
   twoFactorEnabled: boolean;
   locked: boolean;
 }
 
+export type AccountKind = 'person' | 'team';
+
 export interface RecordDTO {
   id: string;
+  /** e.g. MSL-2026-000027 */
+  regNo: string;
   fullName: string;
   phone: string;
   nationalIdMasked: string;
   status: RecordStatus;
   hasPhoto: boolean;
+  /** Idadi ya vipande */
+  plots: number | null;
   registeredBy: { id: string; name: string };
+  /** Field officer who did the registration, when a team account was used */
+  fieldOfficer: string | null;
   consentAt: string;
   createdAt: string;
 }
@@ -45,6 +56,7 @@ export const AUDIT_ACTIONS = [
   'share.viewed',
   'user.invited',
   'user.role_changed',
+  'user.password_reset',
   'user.password_changed',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -52,7 +64,7 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export interface AuditEventDTO {
   id: string;
   action: AuditAction;
-  actor: { id: string; name: string } | null; // null = System
+  actor: { id: string; name: string; kind: AccountKind } | null; // null = System
   targetLabel: string | null;
   detail: string | null;
   ip: string | null;
@@ -61,6 +73,8 @@ export interface AuditEventDTO {
 
 /** What the public, unauthenticated share page receives. Never contains the full ID. */
 export interface SharedRecordDTO {
+  regNo: string;
+  plots: number | null;
   fullName: string;
   phone: string;
   nationalIdMasked: string;

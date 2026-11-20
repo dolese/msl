@@ -288,6 +288,16 @@ button { font: inherit; cursor: pointer; }
 .spin { animation: spin 0.9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- Copy, credentials ---------- */
+.copy-btn { height: 30px; padding: 0 10px; gap: 6px; font-size: 12.5px; }
+.copy-btn.copied { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
+.cred { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.cred-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.cred-row:last-child { border-bottom: 0; }
+.cred-row .k { width: 92px; font-size: 13px; color: var(--text-3); flex-shrink: 0; }
+.cred-row .v { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.kind-team { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--brand-red); background: #fdeced; border-radius: 5px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
+
 /* ---------- Dashboard ---------- */
 :root { --chart-bar: #9aabe0; --chart-grid: #eef0f3; }
 .grid-dash { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -329,6 +339,7 @@ button { font: inherit; cursor: pointer; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
   color: var(--text-3); cursor: pointer; background: var(--surface-2); overflow: hidden; padding: 16px;
 }
+@media (max-width: 640px) { .dropzone { aspect-ratio: auto; height: 190px; } }
 .dropzone:hover { border-color: var(--primary); background: var(--primary-soft); }
 .dropzone img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 .dropzone .dz-icon { width: 52px; height: 52px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; color: var(--primary); box-shadow: var(--shadow-sm); }

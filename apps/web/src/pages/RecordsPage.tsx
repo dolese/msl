@@ -10,7 +10,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../hooks/useAuth';
-import { formatDate, formatMaskedId, formatPhone } from '../lib/format';
+import { formatDate, formatMaskedId, formatPhone, registeredByLabel } from '../lib/format';
 
 function useDebounced<T>(value: T, ms = 300) {
   const [v, setV] = useState(value);
@@ -62,7 +62,7 @@ export function RecordsPage() {
         <div className="toolbar">
           <div className="input-icon">
             <Search size={18} />
-            <input className="input" type="search" placeholder="Search by name or phone number" aria-label="Search records"
+            <input className="input" type="search" placeholder="Search name, phone or registration no." aria-label="Search records"
               value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
           </div>
           <select className="select" aria-label="Filter by status" value={status}
@@ -82,20 +82,21 @@ export function RecordsPage() {
           <>
             <div className="table-wrap">
               <table className="table">
-                <thead><tr><th>Person</th><th>Phone</th><th>National ID</th><th>Status</th><th>Registered</th><th aria-label="Open" /></tr></thead>
+                <thead><tr><th>Person</th><th>Phone</th><th>NIDA</th><th className="num">Plots</th><th>Status</th><th>Registered</th><th aria-label="Open" /></tr></thead>
                 <tbody>
                   {list.data.items.map((r) => (
                     <tr key={r.id} className="clickable" onClick={() => navigate(`/records/${r.id}`)}>
                       <td>
                         <div className="cell-person">
                           <Avatar name={r.fullName} size={38} src={r.hasPhoto ? api.photoUrl(r.id) : null} />
-                          <div><Link to={`/records/${r.id}`} onClick={(e) => e.stopPropagation()}><strong>{r.fullName}</strong></Link></div>
+                          <div><Link to={`/records/${r.id}`} onClick={(e) => e.stopPropagation()}><strong>{r.fullName}</strong></Link><span className="mono">{r.regNo}</span></div>
                         </div>
                       </td>
-                      <td>{formatPhone(r.phone)}</td>
+                      <td style={{ whiteSpace: 'nowrap' }}>{formatPhone(r.phone)}</td>
                       <td className="masked">{formatMaskedId(r.nationalIdMasked)}</td>
+                      <td className="num">{r.plots ?? '—'}</td>
                       <td><StatusBadge value={r.status} /></td>
-                      <td><div>{formatDate(r.createdAt)}</div><div className="small muted">by {r.registeredBy.name}</div></td>
+                      <td><div>{formatDate(r.createdAt)}</div><div className="small muted">by {registeredByLabel(r)}</div></td>
                       <td className="num muted"><ChevronRight size={18} /></td>
                     </tr>
                   ))}
@@ -109,7 +110,8 @@ export function RecordsPage() {
                     <Avatar name={r.fullName} size={42} src={r.hasPhoto ? api.photoUrl(r.id) : null} />
                     <div className="grow">
                       <strong>{r.fullName}</strong>
-                      <div className="meta">{formatPhone(r.phone)} <StatusBadge value={r.status} /></div>
+                      <div className="meta"><span className="mono">{r.regNo}</span> · {formatPhone(r.phone)}</div>
+                      <div className="meta">{r.plots ?? 0} plot{r.plots === 1 ? '' : 's'} <StatusBadge value={r.status} /></div>
                     </div>
                     <ChevronRight size={18} className="muted" />
                   </Link>

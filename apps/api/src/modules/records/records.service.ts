@@ -1,6 +1,6 @@
 import { and, count, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
 import {
-  maskNationalId, type Paginated, type RecordDTO, type RecordStatus,
+  formatRegNo, maskNationalId, parseRegNo, type Paginated, type RecordDTO, type RecordStatus,
   createRecordSchema, listRecordsQuery, updateRecordSchema,
 } from '@msl/shared';
 import type { z } from 'zod';
@@ -17,12 +17,15 @@ const selection = { record: records, registrar: { id: users.id, name: users.name
 export function toDTO(row: RecordRow, registrar: { id: string; name: string }): RecordDTO {
   return {
     id: row.id,
+    regNo: formatRegNo(row.seq, row.createdAt),
     fullName: row.fullName,
     phone: row.phone,
     nationalIdMasked: maskNationalId(row.nationalIdLast2),
     status: row.status,
     hasPhoto: !!row.photoPath,
+    plots: row.plots,
     registeredBy: registrar,
+    fieldOfficer: row.fieldOfficer,
     consentAt: row.consentAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
   };
@@ -32,7 +35,15 @@ export async function listRecords(query: z.infer<typeof listRecordsQuery>): Prom
   const filters: SQL[] = [];
   if (query.q) {
     const like = `%${query.q.replace(/[%_\\]/g, '\\$&')}%`;
-    filters.push(or(ilike(records.fullName, like), ilike(records.phone, like))!);
+    const seq = parseRegNo(query.q);
+    const digits = query.q.replace(/\D/g, '');
+    filters.push(or(
+      ilike(records.fullName, like),
+      ilike(records.phone, like),
+      // phones are stored as +255…, so "0714715378" should match too
+      ...(digits.length >= 6 ? [ilike(records.phone, `%${digits.replace(/^0/, '')}%`)] : []),
+      ...(seq !== null ? [eq(records.seq, seq)] : []),
+    )!);
   }
   if (query.status) filters.push(eq(records.status, query.status));
   if (query.registrarId) filters.push(eq(records.registeredById, query.registrarId));
@@ -63,6 +74,7 @@ export async function createRecord(
   input: z.output<typeof createRecordSchema>,
   registeredById: string,
   photoPath: string | null,
+  fieldOfficer: string | null,
 ) {
   const nationalIdHash = hmac(input.nationalId, idHashKey());
   const [dupe] = await db.select({ id: records.id }).from(records)
@@ -76,6 +88,8 @@ export async function createRecord(
     nationalIdHash,
     nationalIdLast2: input.nationalId.slice(-2),
     photoPath,
+    plots: input.plots,
+    fieldOfficer,
     consentAt: new Date(),
     registeredById,
   }).returning();
@@ -104,9 +118,10 @@ export async function exportCsv(): Promise<{ csv: string; count: number }> {
     .innerJoin(users, eq(users.id, records.registeredById)).orderBy(desc(records.createdAt));
   const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [
-    'id,full_name,phone,national_id,status,registered_by,registered_at',
+    'registration_no,full_name,phone,national_id,plots,status,registered_by,field_officer,registered_at',
     ...rows.map(({ record: r, registrar }) =>
-      [r.id, r.fullName, r.phone, maskNationalId(r.nationalIdLast2), r.status, registrar.name, r.createdAt.toISOString()]
+      [formatRegNo(r.seq, r.createdAt), r.fullName, r.phone, maskNationalId(r.nationalIdLast2), r.plots == null ? '' : String(r.plots),
+        r.status, registrar.name, r.fieldOfficer ?? '', r.createdAt.toISOString()]
         .map(esc).join(',')),
   ];
   return { csv: lines.join('\n'), count: rows.length };

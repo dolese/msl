@@ -20,7 +20,8 @@ export async function loadSession(req: Request, _res: Response, next: NextFuncti
     .limit(1);
   if (row && !row.user.lockedAt) {
     req.session = { id: row.sid, csrfToken: row.csrf };
-    req.user = { id: row.user.id, name: row.user.name, email: row.user.email, role: row.user.role };
+    const u = row.user;
+    req.user = { id: u.id, name: u.name, email: u.email, username: u.username, kind: u.kind, role: u.role };
   }
   next();
 }

@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { XCircle, CalendarDays, Check, CheckCircle2, Copy, Download, Eye, EyeOff, History, IdCard, Link2, Phone, ShieldCheck, UserRound } from 'lucide-react';
+import { Hash, MapPinned, XCircle, CalendarDays, Check, CheckCircle2, Copy, Download, Eye, EyeOff, History, IdCard, Link2, Phone, ShieldCheck, UserRound } from 'lucide-react';
 import type { ShareTtl } from '@msl/shared';
 import { api, ApiError } from '../api/client';
 import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/Badge';
 import { Alert, EmptyState, Loading } from '../components/Feedback';
 import { PageHeader } from '../components/PageHeader';
+import { CopyButton } from '../components/CopyButton';
 import { RejectModal } from '../components/RejectModal';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../hooks/useAuth';
 import { describeEvent } from '../lib/audit-labels';
-import { formatDate, formatDateTimeLong, formatMaskedId, formatPhone } from '../lib/format';
+import { formatDate, formatDateTimeLong, formatMaskedId, formatPhone, registeredByLabel } from '../lib/format';
 
 const TTL_LABEL: Record<ShareTtl, string> = { '1h': '1 hour', '24h': '24 hours', '7d': '7 days' };
 
@@ -58,8 +59,8 @@ export function RecordDetailPage() {
     <>
       <PageHeader
         back={{ to: '/records', label: 'Records' }}
-        title={<span className="row wrap">{r.fullName} <StatusBadge value={r.status} /></span>}
-        description={`Registered ${formatDate(r.createdAt)} by ${r.registeredBy.name}`}
+        title={<span className="row wrap">{r.fullName} <StatusBadge value={r.status} /> <CopyButton value={r.fullName} label="Copy name" compact /></span>}
+        description={`${r.regNo} · registered ${formatDate(r.createdAt)} by ${registeredByLabel(r)}`}
         actions={r.status === 'pending' && can('records:verify') && (<>
           <button className="btn btn-secondary" onClick={() => setRejecting(true)}><XCircle size={17} /> Reject</button>
           <button className="btn btn-success" onClick={verify}><CheckCircle2 size={17} /> Mark as verified</button>
@@ -77,19 +78,24 @@ export function RecordDetailPage() {
           </div>
           <div className="card-body">
             <dl className="dl">
-              <div><dt><Phone size={17} /> Phone</dt><dd>{formatPhone(r.phone)}</dd></div>
+              <div><dt><Hash size={17} /> Registration no.</dt><dd><span className="mono">{r.regNo}</span><CopyButton value={r.regNo} label="Copy registration number" /></dd></div>
+              <div><dt><Phone size={17} /> Phone</dt><dd>{formatPhone(r.phone)}<CopyButton value={r.phone.replace(/^\+255/, '0')} label="Copy phone number" /></dd></div>
               <div>
                 <dt><IdCard size={17} /> National ID</dt>
                 <dd>
-                  <span className={revealed ? 'mono' : 'masked'}>{revealed ?? formatMaskedId(r.nationalIdMasked)}</span>
-                  {can('records:revealId') && (
-                    <button className="btn btn-secondary btn-sm" onClick={reveal}>
-                      {revealed ? <><EyeOff size={15} /> Hide</> : <><Eye size={15} /> Reveal</>}
-                    </button>
-                  )}
+                  <span className={revealed ? 'mono' : 'masked'}>{revealed ? revealed.replace(/-/g, '') : formatMaskedId(r.nationalIdMasked)}</span>
+                  <span className="row" style={{ gap: 8 }}>
+                    {revealed && <CopyButton value={revealed.replace(/-/g, '')} label="Copy NIDA number" />}
+                    {can('records:revealId') && (
+                      <button className="btn btn-secondary btn-sm" onClick={reveal}>
+                        {revealed ? <><EyeOff size={15} /> Hide</> : <><Eye size={15} /> Reveal</>}
+                      </button>
+                    )}
+                  </span>
                 </dd>
               </div>
-              <div><dt><UserRound size={17} /> Registered by</dt><dd>{r.registeredBy.name}</dd></div>
+              <div><dt><MapPinned size={17} /> Plots <span className="muted small">(vipande)</span></dt><dd>{r.plots ?? '—'}{r.plots != null && <CopyButton value={String(r.plots)} label="Copy number of plots" />}</dd></div>
+              <div><dt><UserRound size={17} /> Registered by</dt><dd>{r.fieldOfficer ?? r.registeredBy.name}{r.fieldOfficer && <span className="muted small">via {r.registeredBy.name}</span>}</dd></div>
               <div><dt><CalendarDays size={17} /> Registered</dt><dd>{formatDate(r.createdAt)}</dd></div>
               <div><dt><ShieldCheck size={17} /> Consent</dt><dd>{formatDateTimeLong(r.consentAt)}</dd></div>
             </dl>

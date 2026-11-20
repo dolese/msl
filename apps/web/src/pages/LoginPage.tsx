@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Mail, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, ShieldCheck, User } from 'lucide-react';
 import { loginSchema } from '@msl/shared';
 import { api, ApiError } from '../api/client';
 import { BrandMark } from '../components/BrandMark';
@@ -12,7 +12,7 @@ export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const from = (useLocation().state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/dashboard';
-  const [form, setForm] = useState({ email: '', password: '', totp: '' });
+  const [form, setForm] = useState({ login: '', password: '', totp: '' });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
@@ -23,7 +23,7 @@ export function LoginPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const parsed = loginSchema.safeParse(twoFactor ? form : { email: form.email, password: form.password });
+    const parsed = loginSchema.safeParse(twoFactor ? form : { login: form.login, password: form.password });
     if (twoFactor && !form.totp) return setError('Enter the 6-digit code from your authenticator app.');
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? 'Check your details.');
     setBusy(true);
@@ -66,13 +66,14 @@ export function LoginPage() {
             <div><strong>MSL Registry</strong><span>MSL Land Surveyors Co. Ltd</span></div>
           </div>
           <h1>Sign in</h1>
-          <p className="sub">Use the email and password your administrator gave you.</p>
+          <p className="sub">Use the sign-in details your administrator gave you.</p>
           <form onSubmit={onSubmit} noValidate>
             <div className="field">
-              <label htmlFor="email">Email address</label>
-              <div className="input-icon"><Mail size={18} />
-                <input id="email" className="input" type="email" autoComplete="username" placeholder="you@company.co.tz"
-                  value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <label htmlFor="email">Email or team username</label>
+              <div className="input-icon"><User size={18} />
+                <input id="email" className="input" type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+                  autoComplete="username" placeholder="you@company.co.tz or team.kinondoni"
+                  value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} />
               </div>
             </div>
             <div className="field">

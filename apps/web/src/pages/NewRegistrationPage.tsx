@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Camera, IdCard, Lock, Phone, RefreshCw, User } from 'lucide-react';
+import { Camera, Hash, IdCard, Lock, MapPinned, Phone, RefreshCw, User, UserCheck } from 'lucide-react';
 import { createRecordSchema } from '@msl/shared';
 import { api, ApiError } from '../api/client';
 import { Alert } from '../components/Feedback';
 import { PageHeader } from '../components/PageHeader';
+import { useAuth } from '../hooks/useAuth';
 
 const MAX_PHOTO = 5 * 1024 * 1024;
-type Errors = Partial<Record<'fullName' | 'phone' | 'nationalId' | 'consent' | 'photo' | 'form', string>>;
+type Field = 'fullName' | 'phone' | 'nationalId' | 'plots' | 'fieldOfficer';
+type Errors = Partial<Record<Field | 'consent' | 'photo' | 'form', string>>;
 
 export function NewRegistrationPage() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ fullName: '', phone: '', nationalId: '', consent: false });
+  const { user } = useAuth();
+  const isTeam = user?.kind === 'team';
+  const [form, setForm] = useState({ fullName: '', phone: '', nationalId: '', plots: '', fieldOfficer: '', consent: false });
   const [photo, setPhoto] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
@@ -27,16 +31,17 @@ export function NewRegistrationPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const parsed = createRecordSchema.safeParse(form);
-    if (!parsed.success) {
-      const fe: Errors = {};
-      for (const issue of parsed.error.issues) fe[String(issue.path[0]) as keyof Errors] ??= issue.message;
-      return setErrors(fe);
-    }
+    const parsed = createRecordSchema.safeParse({ ...form, fieldOfficer: isTeam ? form.fieldOfficer : undefined });
+    const fe: Errors = {};
+    if (!parsed.success) for (const issue of parsed.error.issues) fe[String(issue.path[0]) as keyof Errors] ??= issue.message;
+    if (isTeam && !form.fieldOfficer.trim()) fe.fieldOfficer = "Enter the field officer's name";
+    if (!parsed.success || Object.keys(fe).length) return setErrors(fe);
     const body = new FormData();
     body.set('fullName', parsed.data.fullName);
     body.set('phone', parsed.data.phone);
     body.set('nationalId', parsed.data.nationalId);
+    body.set('plots', String(parsed.data.plots));
+    if (isTeam) body.set('fieldOfficer', form.fieldOfficer.trim());
     body.set('consent', 'true');
     if (photo) body.set('photo', photo);
     setBusy(true);
@@ -50,7 +55,7 @@ export function NewRegistrationPage() {
     }
   }
 
-  const set = (k: 'fullName' | 'phone' | 'nationalId') => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const set = (k: Field) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [k]: e.target.value });
     if (errors[k]) setErrors({ ...errors, [k]: undefined });
   };
@@ -104,14 +109,39 @@ export function NewRegistrationPage() {
                 {errors.phone && <span className="field-error">{errors.phone}</span>}
               </div>
               <div className="field">
-                <label htmlFor="nationalId">National ID (NIDA) <span className="req">*</span></label>
+                <label htmlFor="nationalId">NIDA number <span className="req">*</span></label>
                 <div className="input-icon"><IdCard size={18} />
-                  <input id="nationalId" className="input mono" autoComplete="off" placeholder="YYYYMMDD-XXXXX-XXXXX-XX"
+                  <input id="nationalId" className="input mono" autoComplete="off" inputMode="numeric" placeholder="20 digits"
                     value={form.nationalId} onChange={set('nationalId')} aria-invalid={!!errors.nationalId} />
                 </div>
                 {errors.nationalId ? <span className="field-error">{errors.nationalId}</span>
-                  : <span className="hint"><Lock size={12} style={{ verticalAlign: '-1px' }} /> Encrypted when saved and masked everywhere.</span>}
+                  : <span className="hint"><Lock size={12} style={{ verticalAlign: '-1px' }} /> With or without dashes. Encrypted and masked everywhere.</span>}
               </div>
+              <div className="field">
+                <label htmlFor="plots">Number of plots <span className="muted">(Idadi ya vipande)</span> <span className="req">*</span></label>
+                <div className="input-icon"><MapPinned size={18} />
+                  <input id="plots" className="input" type="number" inputMode="numeric" min={0} max={999} step={1} placeholder="e.g. 3"
+                    value={form.plots} onChange={set('plots')} aria-invalid={!!errors.plots} />
+                </div>
+                {errors.plots && <span className="field-error">{errors.plots}</span>}
+              </div>
+              {isTeam ? (
+                <div className="field">
+                  <label htmlFor="fieldOfficer">Field officer <span className="muted">(Msajili)</span> <span className="req">*</span></label>
+                  <div className="input-icon"><UserCheck size={18} />
+                    <input id="fieldOfficer" className="input" autoComplete="name" placeholder="Your full name"
+                      value={form.fieldOfficer} onChange={set('fieldOfficer')} aria-invalid={!!errors.fieldOfficer} />
+                  </div>
+                  {errors.fieldOfficer ? <span className="field-error">{errors.fieldOfficer}</span>
+                    : <span className="hint">The person doing this registration for {user?.name}.</span>}
+                </div>
+              ) : (
+                <div className="field">
+                  <label>Registered by</label>
+                  <div className="input-icon"><Hash size={18} /><input className="input" readOnly value={user?.name ?? ''} /></div>
+                  <span className="hint">Added automatically from your account.</span>
+                </div>
+              )}
               <div className="field full">
                 <label className={`checkbox-card${form.consent ? ' checked' : ''}`}>
                   <input type="checkbox" checked={form.consent}

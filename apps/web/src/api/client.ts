@@ -1,5 +1,5 @@
 import type {
-  AuditEventDTO, DashboardDTO, LoginInput, Paginated, RecordDTO, Role, SharedRecordDTO, ShareTtl, UserDTO,
+  AccountKind, AuditEventDTO, DashboardDTO, InviteUserInput, LoginInput, Paginated, RecordDTO, Role, SharedRecordDTO, ShareTtl, UserDTO,
 } from '@msl/shared';
 
 export class ApiError extends Error {
@@ -31,7 +31,7 @@ const qs = (params: Record<string, string | number | undefined>) => {
   return s ? `?${s}` : '';
 };
 
-type SessionUser = { id: string; name: string; email: string; role: Role };
+export type SessionUser = { id: string; name: string; email: string | null; username: string | null; kind: AccountKind; role: Role };
 
 export const api = {
   login: (body: LoginInput) =>
@@ -59,7 +59,9 @@ export const api = {
 
   listUsers: () => request<UserDTO[]>('/users'),
   unlockUser: (id: string) => request<UserDTO>(`/users/${id}/unlock`, { method: 'POST' }),
-  inviteUser: (body: { name: string; email: string; role: Role; password: string }) =>
+  resetUserPassword: (id: string, password: string) =>
+    request<UserDTO>(`/users/${id}/password`, { method: 'POST', body: JSON.stringify({ password }) }),
+  inviteUser: (body: InviteUserInput) =>
     request<UserDTO>('/users', { method: 'POST', body: JSON.stringify(body) }),
 
   listAudit: (p: { q?: string; userId?: string; days?: number; page?: number }) =>

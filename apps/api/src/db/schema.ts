@@ -1,16 +1,21 @@
 import {
-  boolean, customType, index, integer, pgEnum, pgTable, text, timestamp, uuid,
+  boolean, customType, index, integer, pgEnum, pgTable, serial, text, timestamp, uuid,
 } from 'drizzle-orm/pg-core';
 
 const bytea = customType<{ data: Buffer }>({ dataType: () => 'bytea' });
 
 export const roleEnum = pgEnum('role', ['admin', 'registrar', 'viewer']);
+export const accountKindEnum = pgEnum('account_kind', ['person', 'team']);
 export const statusEnum = pgEnum('record_status', ['pending', 'verified', 'rejected']);
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  email: text('email').notNull().unique(),
+  kind: accountKindEnum('kind').notNull().default('person'),
+  /** People sign in with email */
+  email: text('email').unique(),
+  /** Team accounts sign in with username */
+  username: text('username').unique(),
   passwordHash: text('password_hash').notNull(),
   role: roleEnum('role').notNull().default('viewer'),
   totpSecret: text('totp_secret'), // null => 2FA off
@@ -31,6 +36,8 @@ export const records = pgTable(
   'records',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    /** Running number behind the registration no. (MSL-2026-000027) */
+    seq: serial('seq').notNull().unique(),
     fullName: text('full_name').notNull(),
     phone: text('phone').notNull(),
     /** AES-256-GCM ciphertext (iv|tag|data) */
@@ -39,6 +46,10 @@ export const records = pgTable(
     nationalIdHash: text('national_id_hash').notNull().unique(),
     nationalIdLast2: text('national_id_last2').notNull(),
     photoPath: text('photo_path'),
+    /** Idadi ya vipande */
+    plots: integer('plots'),
+    /** Field officer (Msajili) when registered from a team account */
+    fieldOfficer: text('field_officer'),
     status: statusEnum('status').notNull().default('pending'),
     consentAt: timestamp('consent_at', { withTimezone: true }).notNull(),
     registeredById: uuid('registered_by_id').notNull().references(() => users.id),
