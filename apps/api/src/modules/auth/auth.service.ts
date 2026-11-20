@@ -1,0 +1,62 @@
+import { eq, sql } from 'drizzle-orm';
+import { authenticator } from 'otplib';
+import type { LoginInput } from '@msl/shared';
+import { db } from '../../db/client.js';
+import { sessions, users } from '../../db/schema.js';
+import { randomToken, sha256, verifyPassword } from '../../lib/crypto.js';
+import { audit } from '../../lib/audit.js';
+import { HttpError, unauthorized } from '../../lib/http-error.js';
+
+export const MAX_FAILED_LOGINS = 5;
+export const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8h
+
+authenticator.options = { window: 1 }; // allow ±30s clock drift
+
+export async function signIn(input: LoginInput, ip: string | undefined) {
+  const email = input.email.toLowerCase();
+  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  // Same generic error for unknown user / bad password / bad code — no account enumeration.
+  const fail = unauthorized('Invalid email, password or code');
+
+  if (!user) throw fail;
+  if (user.lockedAt) throw new HttpError(423, 'Account locked. Contact an administrator.');
+
+  const passwordOk = await verifyPassword(input.password, user.passwordHash);
+  const totpOk = !!user.totpSecret && authenticator.check(input.totp, user.totpSecret);
+
+  if (!passwordOk || !totpOk) {
+    const [updated] = await db
+      .update(users)
+      .set({ failedLogins: sql`${users.failedLogins} + 1` })
+      .where(eq(users.id, user.id))
+      .returning({ failedLogins: users.failedLogins });
+    await audit({ action: 'auth.sign_in_failed', actorId: user.id, ip });
+    if ((updated?.failedLogins ?? 0) >= MAX_FAILED_LOGINS) {
+      await db.update(users).set({ lockedAt: new Date() }).where(eq(users.id, user.id));
+      await audit({ action: 'auth.account_locked', targetLabel: user.email, detail: `${MAX_FAILED_LOGINS} fails`, ip });
+    }
+    throw fail;
+  }
+
+  await db.update(users).set({ failedLogins: 0 }).where(eq(users.id, user.id));
+  const token = randomToken();
+  const csrfToken = randomToken();
+  await db.insert(sessions).values({
+    id: sha256(token),
+    userId: user.id,
+    csrfToken,
+    expiresAt: new Date(Date.now() + SESSION_TTL_MS),
+  });
+  await audit({ action: 'auth.sign_in', actorId: user.id, detail: '2FA verified', ip });
+
+  return {
+    token,
+    csrfToken,
+    user: { id: user.id, name: user.name, email: user.email, role: user.role },
+  };
+}
+
+export async function signOut(sessionId: string, userId: string, ip?: string) {
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
+  await audit({ action: 'auth.sign_out', actorId: userId, ip });
+}
