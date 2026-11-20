@@ -16,7 +16,11 @@ recordsRouter.get('/', requirePermission('records:read'), async (req, res) => {
   res.json(await svc.listRecords(listRecordsQuery.parse(req.query)));
 });
 
-// Declared before "/:id" so "export" isn't treated as an id.
+// Declared before "/:id" so these paths aren't treated as an id.
+recordsRouter.get('/stats', requirePermission('records:read'), async (_req, res) => {
+  res.json(await svc.recordStats());
+});
+
 recordsRouter.get('/export.csv', requirePermission('records:export'), async (req, res) => {
   const { csv, count } = await svc.exportCsv();
   await audit({ action: 'record.exported', actorId: req.user!.id, detail: `${count} records — CSV format`, ip: req.ip });

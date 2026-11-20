@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { CalendarDays, Check, CheckCircle2, Copy, Download, Eye, EyeOff, History, IdCard, Link2, Phone, ShieldCheck, UserRound } from 'lucide-react';
 import type { ShareTtl } from '@msl/shared';
 import { api, ApiError } from '../api/client';
-import { AppHeader } from '../components/AppHeader';
 import { Avatar } from '../components/Avatar';
-import { Badge } from '../components/Badge';
-import { Chip } from '../components/Chip';
+import { StatusBadge } from '../components/Badge';
+import { Alert, EmptyState, Loading } from '../components/Feedback';
+import { PageHeader } from '../components/PageHeader';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../hooks/useAuth';
-import { formatDateTime, formatPhone, formatShortDate, shortName } from '../lib/format';
 import { describeEvent } from '../lib/audit-labels';
+import { formatDate, formatDateTimeLong, formatMaskedId, formatPhone } from '../lib/format';
 
 const TTL_LABEL: Record<ShareTtl, string> = { '1h': '1 hour', '24h': '24 hours', '7d': '7 days' };
 
@@ -19,82 +20,131 @@ export function RecordDetailPage() {
   const record = useAsync(() => api.getRecord(id), [id]);
   const history = useAsync(() => api.history(id), [id]);
   const [revealed, setRevealed] = useState<string | null>(null);
-  const [ttl, setTtl] = useState<ShareTtl>('1h');
-  const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [ttl, setTtl] = useState<ShareTtl>('24h');
+  const [link, setLink] = useState<{ url: string; expiresAt: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  if (record.loading) return <div className="center muted">Loading…</div>;
-  if (!record.data) return <div className="center error">{record.error?.message ?? 'Not found'}</div>;
+  useEffect(() => {
+    if (!revealed) return;
+    const t = setTimeout(() => setRevealed(null), 30_000); // re-mask automatically
+    return () => clearTimeout(t);
+  }, [revealed]);
+
+  if (record.loading && !record.data) return <Loading />;
+  if (!record.data) return <div className="card"><EmptyState icon={IdCard} title="Record not found">{record.error?.message}</EmptyState></div>;
   const r = record.data;
 
-  async function reveal() {
+  async function run(fn: () => Promise<void>) {
+    setActionError(null);
+    try { await fn(); } catch (err) { setActionError(err instanceof ApiError ? err.message : 'Something went wrong.'); }
+  }
+  const reveal = () => run(async () => {
     if (revealed) return setRevealed(null);
-    const { nationalId } = await api.revealId(id);
-    setRevealed(nationalId);
+    setRevealed((await api.revealId(id)).nationalId);
     history.reload();
-    setTimeout(() => setRevealed(null), 30_000); // auto re-mask
-  }
-
-  async function share() {
-    try {
-      const { url } = await api.share(id, ttl);
-      await navigator.clipboard.writeText(url).catch(() => undefined);
-      setShareMsg(`Link copied — expires in ${TTL_LABEL[ttl]}`);
-      history.reload();
-    } catch (err) {
-      setShareMsg(err instanceof ApiError ? err.message : 'Could not create link');
-    }
-  }
+  });
+  const verify = () => run(async () => { await api.verify(id); record.reload(); history.reload(); });
+  const share = () => run(async () => {
+    const res = await api.share(id, ttl);
+    setLink(res); setCopied(false);
+    await navigator.clipboard?.writeText(res.url).then(() => setCopied(true)).catch(() => undefined);
+    history.reload();
+  });
 
   return (
-    <div className="page">
-      <AppHeader title="Record detail" back actions={<Badge value={r.status} />} />
-      <div className="hero">
-        <Avatar name={r.fullName} size={72} src={r.hasPhoto ? api.photoUrl(r.id) : null} />
-        {r.hasPhoto && <a className="hero-action" href={api.photoUrl(r.id, true)} download>⬇ Download</a>}
-      </div>
-
-      <section className="card stack-sm">
-        <h2>{r.fullName}</h2>
-        <div>📞 {formatPhone(r.phone)}</div>
-        <div className="row">
-          <span className="mono">🪪 {revealed ?? r.nationalIdMasked}</span>
-          {can('records:revealId') && (
-            <button className="btn-sm btn-outline push-right" onClick={reveal}>{revealed ? '🙈 Hide' : '👁 Reveal'}</button>
-          )}
-        </div>
-        <div className="muted small">👤 Registered by {shortName(r.registeredBy.name)}, {formatShortDate(r.createdAt)}</div>
-        <div className="muted small">✓ Consent given {formatDateTime(r.consentAt)}</div>
-        {r.status === 'pending' && can('records:verify') && (
-          <button className="btn-sm btn-outline" onClick={() => api.verify(id).then(() => { record.reload(); history.reload(); })}>
-            Mark verified
-          </button>
+    <>
+      <PageHeader
+        back={{ to: '/records', label: 'Records' }}
+        title={<span className="row wrap">{r.fullName} <StatusBadge value={r.status} /></span>}
+        description={`Registered ${formatDate(r.createdAt)} by ${r.registeredBy.name}`}
+        actions={r.status === 'pending' && can('records:verify') && (
+          <button className="btn btn-success" onClick={verify}><CheckCircle2 size={17} /> Mark as verified</button>
         )}
-      </section>
+      />
+      {actionError && <div style={{ marginBottom: 16 }}><Alert kind="error">{actionError}</Alert></div>}
 
-      {can('share:create') && (
-        <section className="card stack-sm">
-          <h3>🔗 Create share link</h3>
-          <div className="row gap-sm">
-            {(Object.keys(TTL_LABEL) as ShareTtl[]).map((t) => (
-              <Chip key={t} active={ttl === t} onClick={() => setTtl(t)}>{TTL_LABEL[t]}</Chip>
-            ))}
+      <div className="grid-detail">
+        <div className="card">
+          <div className="profile-photo">
+            {r.hasPhoto
+              ? <img src={api.photoUrl(r.id)} alt={`Photo of ${r.fullName}`} />
+              : <Avatar name={r.fullName} size={112} />}
+            {r.hasPhoto && <a className="btn btn-secondary btn-sm photo-action" href={api.photoUrl(r.id, true)} download><Download size={15} /> Download</a>}
           </div>
-          <button className="btn-primary" onClick={share}>Generate and copy link</button>
-          {shareMsg && <p className="hint" role="status">{shareMsg}</p>}
-        </section>
-      )}
+          <div className="card-body">
+            <dl className="dl">
+              <div><dt><Phone size={17} /> Phone</dt><dd>{formatPhone(r.phone)}</dd></div>
+              <div>
+                <dt><IdCard size={17} /> National ID</dt>
+                <dd>
+                  <span className={revealed ? 'mono' : 'masked'}>{revealed ?? formatMaskedId(r.nationalIdMasked)}</span>
+                  {can('records:revealId') && (
+                    <button className="btn btn-secondary btn-sm" onClick={reveal}>
+                      {revealed ? <><EyeOff size={15} /> Hide</> : <><Eye size={15} /> Reveal</>}
+                    </button>
+                  )}
+                </dd>
+              </div>
+              <div><dt><UserRound size={17} /> Registered by</dt><dd>{r.registeredBy.name}</dd></div>
+              <div><dt><CalendarDays size={17} /> Registered</dt><dd>{formatDate(r.createdAt)}</dd></div>
+              <div><dt><ShieldCheck size={17} /> Consent</dt><dd>{formatDateTimeLong(r.consentAt)}</dd></div>
+            </dl>
+            {revealed && <p className="hint mt-16">The full ID hides again after 30 seconds. This reveal was recorded in the audit log.</p>}
+          </div>
+        </div>
 
-      <section className="card">
-        <h3>🕘 Activity history</h3>
-        <ol className="timeline">
-          {history.data?.map((e, i) => (
-            <li key={e.id} className={i === 0 ? 'first' : ''}>
-              <div>{describeEvent(e).title}</div>
-              <div className="muted small">{e.actor ? shortName(e.actor.name) : 'System'} — {formatDateTime(e.createdAt)}</div>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </div>
+        <div className="stack">
+          {can('share:create') && (
+            <div className="card">
+              <div className="card-header">
+                <div><h2><Link2 size={18} /> Share a read-only link</h2><p>The ID stays masked. The link stops working when it expires.</p></div>
+              </div>
+              <div className="card-body stack" style={{ gap: 14 }}>
+                <div className="row between wrap">
+                  <span className="label">Expires after</span>
+                  <div className="segmented" role="group" aria-label="Link expiry">
+                    {(Object.keys(TTL_LABEL) as ShareTtl[]).map((t) => (
+                      <button key={t} type="button" aria-pressed={ttl === t} onClick={() => setTtl(t)}>{TTL_LABEL[t]}</button>
+                    ))}
+                  </div>
+                </div>
+                <button className="btn btn-primary btn-block" onClick={share}><Link2 size={17} /> Create link</button>
+                {link && (
+                  <div className="field">
+                    <div className="copy-field">
+                      <input className="input" readOnly value={link.url} onFocus={(e) => e.target.select()} aria-label="Share link" />
+                      <button className="btn btn-secondary" onClick={() => navigator.clipboard?.writeText(link.url).then(() => setCopied(true))}>
+                        {copied ? <><Check size={16} /> Copied</> : <><Copy size={16} /> Copy</>}
+                      </button>
+                    </div>
+                    <span className="hint">Valid until {formatDateTimeLong(link.expiresAt)}.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="card">
+            <div className="card-header"><h2><History size={18} /> Activity</h2></div>
+            <div className="card-body">
+              {history.data && history.data.length > 0 ? (
+                <ol className="timeline">
+                  {[...history.data].reverse().map((e) => {
+                    const d = describeEvent(e);
+                    return (
+                      <li key={e.id}>
+                        <span className={`t-icon tone-${d.tone}`}><d.icon size={16} /></span>
+                        <div><div className="t-title">{d.title}</div><div className="t-meta">{formatDateTimeLong(e.createdAt)}{e.detail && ` · ${e.detail}`}</div></div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : <p className="muted small">No activity yet.</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

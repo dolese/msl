@@ -1,46 +1,61 @@
 import { useParams } from 'react-router-dom';
+import { CalendarDays, Clock, IdCard, LinkIcon, Phone, ShieldCheck } from 'lucide-react';
 import { api } from '../api/client';
 import { Avatar } from '../components/Avatar';
-import { Badge } from '../components/Badge';
+import { StatusBadge } from '../components/Badge';
+import { BrandMark } from '../components/BrandMark';
+import { Alert, EmptyState, Loading } from '../components/Feedback';
 import { useAsync } from '../hooks/useAsync';
-import { formatDate, formatPhone, minutesUntil } from '../lib/format';
+import { formatDate, formatMaskedId, formatPhone, minutesUntil } from '../lib/format';
 
-/** Public, read-only view opened from a share link. No auth, no actions. */
+function expiresIn(iso: string) {
+  const m = minutesUntil(iso);
+  if (m >= 2880) return `${Math.round(m / 1440)} days`;
+  if (m >= 120) return `${Math.round(m / 60)} hours`;
+  return `${m} minute${m === 1 ? '' : 's'}`;
+}
+
+/** Public, read-only view opened from a share link. No sign-in, no actions. */
 export function SharedRecordPage() {
   const { token = '' } = useParams();
   const { data, error, loading } = useAsync(() => api.getShared(token), [token]);
 
-  if (loading) return <div className="center muted">Loading…</div>;
-  if (!data) {
-    return (
-      <div className="page">
-        <header className="title-bar">MSL</header>
-        <div className="card center">{error?.message ?? 'This link is invalid or has expired.'}</div>
-      </div>
-    );
-  }
-
-  const mins = minutesUntil(data.expiresAt);
   return (
-    <div className="page">
-      <header className="title-bar">MSL</header>
-      <p className="pill-amber">Link expires in {mins >= 120 ? `${Math.round(mins / 60)} hours` : `${mins} minutes`}</p>
-      <div className="card flush">
-        <div className="hero"><Avatar name={data.fullName} size={64} src={data.photoUrl} /></div>
-        <div className="stack-sm pad">
-          <div className="row"><h2>{data.fullName}</h2><Badge value={data.status} /></div>
-          <dl className="facts">
-            <dt>📞 Phone</dt><dd>{formatPhone(data.phone)}</dd>
-            <dt>🪪 National ID</dt><dd className="mono">{data.nationalIdMasked}</dd>
-            <dt>📅 Registered</dt><dd>{formatDate(data.registeredAt)}</dd>
-          </dl>
+    <div className="public">
+      <div className="public-inner">
+        <div className="public-head">
+          <BrandMark size={40} tone="white" />
+          <div><strong>MSL Land Surveyors</strong><span>Shared registry record</span></div>
         </div>
+
+        {loading ? <div className="card"><Loading /></div> : !data ? (
+          <div className="card"><EmptyState icon={LinkIcon} title="This link is no longer available">{error?.message ?? 'It may have expired.'} Ask the person who shared it for a new link.</EmptyState></div>
+        ) : (
+          <>
+            <div className="card public-card">
+              <div className="profile-photo">
+                {data.photoUrl ? <img src={data.photoUrl} alt={`Photo of ${data.fullName}`} /> : <Avatar name={data.fullName} size={96} />}
+              </div>
+              <div className="card-body">
+                <div className="row between wrap" style={{ marginBottom: 6 }}>
+                  <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>{data.fullName}</h1>
+                  <StatusBadge value={data.status} />
+                </div>
+                <dl className="dl">
+                  <div><dt><Phone size={17} /> Phone</dt><dd>{formatPhone(data.phone)}</dd></div>
+                  <div><dt><IdCard size={17} /> National ID</dt><dd className="masked">{formatMaskedId(data.nationalIdMasked)}</dd></div>
+                  <div><dt><CalendarDays size={17} /> Registered</dt><dd>{formatDate(data.registeredAt)}</dd></div>
+                </dl>
+              </div>
+            </div>
+            <div className="stack mt-16" style={{ gap: 12 }}>
+              <Alert kind="warning"><strong>Link expires in {expiresIn(data.expiresAt)}.</strong> After that it stops working.</Alert>
+              <Alert kind="info">This is a secure, read-only view shared by an authorised MSL user. The ID number is masked and each view is recorded.</Alert>
+            </div>
+          </>
+        )}
+        <p className="public-foot"><ShieldCheck size={15} /> MSL secure registry · <Clock size={14} /> Time-limited link</p>
       </div>
-      <div className="card small muted">
-        🔒 This is a secure, read-only view. ID number is masked. This link was shared by an
-        authorized user and will expire automatically.
-      </div>
-      <p className="hint center">🛡 MSL secure registry</p>
     </div>
   );
 }

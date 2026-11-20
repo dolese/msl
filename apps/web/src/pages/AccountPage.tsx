@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from 'react';
+import { KeyRound, Mail, ShieldCheck } from 'lucide-react';
 import { changePasswordSchema } from '@msl/shared';
 import { api, ApiError } from '../api/client';
-import { AppHeader } from '../components/AppHeader';
 import { Avatar } from '../components/Avatar';
-import { Badge } from '../components/Badge';
+import { StatusBadge } from '../components/Badge';
+import { Alert } from '../components/Feedback';
+import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../hooks/useAuth';
 
 export function AccountPage() {
@@ -14,16 +16,16 @@ export function AccountPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    if (form.newPassword !== form.confirm) return setMsg({ ok: false, text: 'The new passwords do not match' });
+    if (form.newPassword !== form.confirm) return setMsg({ ok: false, text: 'The new passwords do not match.' });
     const parsed = changePasswordSchema.safeParse(form);
-    if (!parsed.success) return setMsg({ ok: false, text: parsed.error.issues[0]?.message ?? 'Check the form' });
+    if (!parsed.success) return setMsg({ ok: false, text: parsed.error.issues[0]?.message ?? 'Check the form.' });
     setBusy(true);
     try {
       await api.changePassword(parsed.data);
       setForm({ currentPassword: '', newPassword: '', confirm: '' });
-      setMsg({ ok: true, text: 'Password changed. Other devices have been signed out.' });
+      setMsg({ ok: true, text: 'Password changed. You have been signed out on your other devices.' });
     } catch (err) {
-      setMsg({ ok: false, text: err instanceof ApiError ? err.message : 'Could not change password' });
+      setMsg({ ok: false, text: err instanceof ApiError ? err.message : 'Could not change the password.' });
     } finally {
       setBusy(false);
     }
@@ -31,36 +33,35 @@ export function AccountPage() {
 
   if (!user) return null;
   return (
-    <div className="page">
-      <AppHeader title="Account" />
-      <section className="card">
-        <div className="row">
-          <Avatar name={user.name} size={48} />
-          <div className="grow">
-            <strong>{user.name}</strong>
-            <div className="muted small">{user.email}</div>
+    <>
+      <PageHeader title="Account settings" description="Your profile and sign-in details." />
+      <div className="grid-detail">
+        <div className="card card-pad">
+          <div className="row" style={{ gap: 16 }}>
+            <Avatar name={user.name} size={64} />
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 600 }}>{user.name}</h2>
+              <div className="muted row" style={{ gap: 6 }}><Mail size={15} /> {user.email}</div>
+              <div style={{ marginTop: 8 }}><StatusBadge value={user.role} /></div>
+            </div>
           </div>
-          <Badge value={user.role} />
+          <div className="mt-16"><Alert kind="info">To change your name, email or role, ask an administrator.</Alert></div>
         </div>
-      </section>
-      <form className="card stack" onSubmit={onSubmit} noValidate>
-        <h3>🔑 Change password</h3>
-        <label>Current password
-          <input type="password" autoComplete="current-password" value={form.currentPassword}
-            onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} />
-        </label>
-        <label>New password
-          <input type="password" autoComplete="new-password" value={form.newPassword}
-            onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
-          <span className="hint">At least 10 characters</span>
-        </label>
-        <label>Repeat new password
-          <input type="password" autoComplete="new-password" value={form.confirm}
-            onChange={(e) => setForm({ ...form, confirm: e.target.value })} />
-        </label>
-        {msg && <p className={msg.ok ? 'text-green' : 'error'} role="status">{msg.text}</p>}
-        <button className="btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
-      </form>
-    </div>
+
+        <form className="card" onSubmit={onSubmit} noValidate>
+          <div className="card-header"><div><h2><KeyRound size={18} /> Change password</h2><p>Use at least 10 characters. A short sentence works well.</p></div></div>
+          <div className="card-body stack" style={{ gap: 16 }}>
+            <div className="field"><label htmlFor="cur">Current password</label>
+              <input id="cur" className="input" type="password" autoComplete="current-password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} /></div>
+            <div className="field"><label htmlFor="new">New password</label>
+              <input id="new" className="input" type="password" autoComplete="new-password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} /></div>
+            <div className="field"><label htmlFor="rep">Confirm new password</label>
+              <input id="rep" className="input" type="password" autoComplete="new-password" value={form.confirm} onChange={(e) => setForm({ ...form, confirm: e.target.value })} /></div>
+            {msg && <Alert kind={msg.ok ? 'success' : 'error'}>{msg.text}</Alert>}
+            <div className="form-actions"><button className="btn btn-primary" disabled={busy}><ShieldCheck size={17} /> {busy ? 'Saving…' : 'Update password'}</button></div>
+          </div>
+        </form>
+      </div>
+    </>
   );
 }

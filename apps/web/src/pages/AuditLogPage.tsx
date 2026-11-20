@@ -1,73 +1,74 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { ScrollText, Search } from 'lucide-react';
 import type { AuditEventDTO } from '@msl/shared';
 import { api } from '../api/client';
-import { AppHeader } from '../components/AppHeader';
-import { Chip } from '../components/Chip';
+import { EmptyState, Loading } from '../components/Feedback';
+import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
 import { useAsync } from '../hooks/useAsync';
 import { describeEvent } from '../lib/audit-labels';
 import { formatTime } from '../lib/format';
 
-const DAY_OPTIONS = [1, 7, 30, 90];
+const RANGES = [{ days: 1, label: 'Last 24 hours' }, { days: 7, label: 'Last 7 days' }, { days: 30, label: 'Last 30 days' }, { days: 90, label: 'Last 90 days' }];
 
 function dayLabel(iso: string) {
   const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date(Date.now() - 86_400_000);
-  const md = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
-  if (d.toDateString() === today.toDateString()) return `TODAY, ${md}`;
-  if (d.toDateString() === yesterday.toDateString()) return `YESTERDAY, ${md}`;
-  return md;
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  const long = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  if (sameDay(d, new Date())) return `Today · ${long}`;
+  if (sameDay(d, new Date(Date.now() - 86_400_000))) return `Yesterday · ${long}`;
+  return long;
 }
 
 export function AuditLogPage() {
+  const [query, setQuery] = useState('');
   const [q, setQ] = useState('');
+  useEffect(() => { const t = setTimeout(() => setQ(query), 300); return () => clearTimeout(t); }, [query]);
   const [days, setDays] = useState(7);
   const [page, setPage] = useState(1);
-  const { data } = useAsync(() => api.listAudit({ q, days, page }), [q, days, page]);
+  const { data, loading } = useAsync(() => api.listAudit({ q, days, page }), [q, days, page]);
 
   const groups = useMemo(() => {
     const map = new Map<string, AuditEventDTO[]>();
-    for (const e of data?.items ?? []) {
-      const key = dayLabel(e.createdAt);
-      map.set(key, [...(map.get(key) ?? []), e]);
-    }
+    for (const e of data?.items ?? []) map.set(dayLabel(e.createdAt), [...(map.get(dayLabel(e.createdAt)) ?? []), e]);
     return [...map];
   }, [data]);
 
   return (
-    <div className="page">
-      <AppHeader title="Audit log" />
-      <input className="search" type="search" placeholder="🔍 Search events" value={q}
-        onChange={(e) => { setQ(e.target.value); setPage(1); }} />
-      <div className="row gap-sm">
-        <Chip active>All events</Chip>
-        <Chip>All users</Chip>
-        <Chip onClick={() => { setDays(DAY_OPTIONS[(DAY_OPTIONS.indexOf(days) + 1) % DAY_OPTIONS.length]!); setPage(1); }}>
-          Last {days} {days === 1 ? 'day' : 'days'}
-        </Chip>
+    <>
+      <PageHeader title="Audit log" description="Every sign-in, registration, ID reveal, export and share link is recorded here." />
+      <div className="card">
+        <div className="toolbar" style={{ borderBottom: 0 }}>
+          <div className="input-icon"><Search size={18} />
+            <input className="input" type="search" placeholder="Search by person, user or action" aria-label="Search events"
+              value={query} onChange={(e) => { setQuery(e.target.value); setPage(1); }} />
+          </div>
+          <select className="select" aria-label="Time range" value={days} onChange={(e) => { setDays(Number(e.target.value)); setPage(1); }}>
+            {RANGES.map((r) => <option key={r.days} value={r.days}>{r.label}</option>)}
+          </select>
+        </div>
       </div>
-      {groups.map(([label, events]) => (
+
+      {loading && !data ? <Loading /> : groups.length === 0 ? (
+        <div className="card mt-16"><EmptyState icon={ScrollText} title="No events in this period">Try a longer time range or a different search.</EmptyState></div>
+      ) : groups.map(([label, events]) => (
         <section key={label}>
-          <h4 className="section-label">{label}</h4>
-          <ul className="card list">
+          <h2 className="day-label">{label}</h2>
+          <div className="card">
             {events.map((e) => {
               const d = describeEvent(e);
               return (
-                <li key={e.id} className="list-row">
-                  <span className={`event-icon tone-${d.tone}`} aria-hidden>{d.icon}</span>
-                  <div className="grow">
-                    <div className="small">{d.title}</div>
-                    <div className="muted small">{d.subtitle}</div>
-                  </div>
-                  <span className="muted small">{formatTime(e.createdAt)}</span>
-                </li>
+                <div key={e.id} className="event-row">
+                  <span className={`e-icon tone-${d.tone}`}><d.icon size={18} /></span>
+                  <div className="grow"><div className="e-title">{d.title}</div>{d.subtitle && <div className="e-sub">{d.subtitle}</div>}</div>
+                  <div className="e-time">{formatTime(e.createdAt)}{e.ip && <div className="hide-sm mono small">{e.ip}</div>}</div>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </section>
       ))}
-      {data && <Pagination {...data} noun="events" onPage={setPage} />}
-    </div>
+      {data && <div className="card mt-16"><Pagination {...data} noun="events" onPage={setPage} /></div>}
+    </>
   );
 }

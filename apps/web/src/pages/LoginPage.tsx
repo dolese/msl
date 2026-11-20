@@ -1,7 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { CheckCircle2, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { loginSchema } from '@msl/shared';
 import { api, ApiError } from '../api/client';
+import { BrandMark } from '../components/BrandMark';
+import { Alert } from '../components/Feedback';
 import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
@@ -20,15 +23,15 @@ export function LoginPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     const parsed = loginSchema.safeParse(twoFactor ? form : { email: form.email, password: form.password });
-    if (twoFactor && !form.totp) return setError('Enter the 6-digit code');
-    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? 'Check your details');
+    if (twoFactor && !form.totp) return setError('Enter the 6-digit code from your authenticator app.');
+    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? 'Check your details.');
     setBusy(true);
     setError(null);
     try {
       await login(parsed.data);
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Sign-in failed');
+      setError(err instanceof ApiError ? err.message : 'Sign-in failed. Check your connection and try again.');
       setForm((f) => ({ ...f, totp: '' }));
     } finally {
       setBusy(false);
@@ -36,31 +39,62 @@ export function LoginPage() {
   }
 
   return (
-    <div className="page login">
-      <header className="title-bar">MSL</header>
-      <div className="logo-lg">MSL</div>
-      <p className="muted center">Secure person registry</p>
-      <form className="card stack" onSubmit={onSubmit} noValidate>
-        <label>Email
-          <input type="email" autoComplete="username" placeholder="you@company.co.tz"
-            value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        </label>
-        <label>Password
-          <input type="password" autoComplete="current-password"
-            value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-        </label>
-        {twoFactor && (
-          <label>One-time code (2FA)
-            <input className="otp" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
-              value={form.totp} onChange={(e) => setForm({ ...form, totp: e.target.value.replace(/\D/g, '') })} />
-            <span className="hint">Check your authenticator app</span>
-          </label>
-        )}
-        {error && <p className="error" role="alert">{error}</p>}
-        <button className="btn-primary" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
-        <p className="hint">Account locks after 5 failed attempts</p>
-        <p className="hint center">🔒 Protected by HTTPS + CSRF</p>
-      </form>
+    <div className="auth">
+      <section className="auth-brand" aria-hidden>
+        <div className="mark-bg"><BrandMark size={520} tone="white" /></div>
+        <div className="lockup">
+          <BrandMark size={48} tone="white" />
+          <div><strong>MSL Registry</strong><span>MSL Land Surveyors Company Limited</span></div>
+        </div>
+        <div className="pitch">
+          <h2>Secure records for every person you register.</h2>
+          <p>Register people with consent, protect their ID numbers, and share details safely with expiring links.</p>
+          <ul>
+            <li><CheckCircle2 size={18} /> National ID numbers encrypted and masked</li>
+            <li><CheckCircle2 size={18} /> Every view, change and share is recorded</li>
+            <li><CheckCircle2 size={18} /> Consent captured under Tanzania PDPA</li>
+          </ul>
+          <p className="tagline">Defining boundaries with excellence</p>
+        </div>
+      </section>
+
+      <section className="auth-form">
+        <div className="auth-card">
+          <div className="mobile-lockup">
+            <BrandMark size={44} />
+            <div><strong>MSL Registry</strong><span>MSL Land Surveyors Co. Ltd</span></div>
+          </div>
+          <h1>Sign in</h1>
+          <p className="sub">Use the email and password your administrator gave you.</p>
+          <form onSubmit={onSubmit} noValidate>
+            <div className="field">
+              <label htmlFor="email">Email address</label>
+              <div className="input-icon"><Mail size={18} />
+                <input id="email" className="input" type="email" autoComplete="username" placeholder="you@company.co.tz"
+                  value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="password">Password</label>
+              <div className="input-icon"><Lock size={18} />
+                <input id="password" className="input" type="password" autoComplete="current-password" placeholder="••••••••••"
+                  value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              </div>
+            </div>
+            {twoFactor && (
+              <div className="field">
+                <label htmlFor="totp">Authentication code</label>
+                <input id="totp" className="input mono" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456"
+                  value={form.totp} onChange={(e) => setForm({ ...form, totp: e.target.value.replace(/\D/g, '') })} />
+                <span className="hint">The 6-digit code from your authenticator app.</span>
+              </div>
+            )}
+            {error && <Alert kind="error">{error}</Alert>}
+            <button className="btn btn-primary btn-lg btn-block" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+          </form>
+          <div className="auth-foot"><ShieldCheck size={16} /> Encrypted connection · Accounts lock after 5 failed attempts</div>
+        </div>
+      </section>
     </div>
   );
 }

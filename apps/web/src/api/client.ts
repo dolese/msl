@@ -44,6 +44,7 @@ export const api = {
 
   listRecords: (p: { q?: string; status?: string; page?: number }) =>
     request<Paginated<RecordDTO>>(`/records${qs(p)}`),
+  stats: () => request<{ total: number; verified: number; pending: number; rejected: number }>('/records/stats'),
   getRecord: (id: string) => request<RecordDTO>(`/records/${id}`),
   createRecord: (form: FormData) => request<RecordDTO>('/records', { method: 'POST', body: form }),
   revealId: (id: string) => request<{ nationalId: string }>(`/records/${id}/reveal-id`, { method: 'POST' }),
@@ -55,6 +56,7 @@ export const api = {
   exportUrl: '/api/records/export.csv',
 
   listUsers: () => request<UserDTO[]>('/users'),
+  unlockUser: (id: string) => request<UserDTO>(`/users/${id}/unlock`, { method: 'POST' }),
   inviteUser: (body: { name: string; email: string; role: Role; password: string }) =>
     request<UserDTO>('/users', { method: 'POST', body: JSON.stringify(body) }),
 

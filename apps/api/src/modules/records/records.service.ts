@@ -111,3 +111,10 @@ export async function exportCsv(): Promise<{ csv: string; count: number }> {
   ];
   return { csv: lines.join('\n'), count: rows.length };
 }
+
+/** Counts per status for the summary cards on the Records page. */
+export async function recordStats() {
+  const rows = await db.select({ status: records.status, n: count() }).from(records).groupBy(records.status);
+  const by = (s: RecordStatus) => rows.find((r) => r.status === s)?.n ?? 0;
+  return { total: rows.reduce((sum, r) => sum + r.n, 0), verified: by('verified'), pending: by('pending'), rejected: by('rejected') };
+}

@@ -21,5 +21,11 @@ export const shortName = (name: string) => {
   return second ? `${first} ${second[0]}.` : first ?? name;
 };
 
+/** "****-****-****-23" -> "•••• •••• •••• 23" */
+export const formatMaskedId = (masked: string) => masked.replace(/\*/g, '•').replace(/-/g, ' ');
+
 /** "+255712345678" -> "+255 712 345 678" */
 export const formatPhone = (p: string) => p.replace(/^\+255(\d{3})(\d{3})(\d{3})$/, '+255 $1 $2 $3');
+
+/** "Nov 18, 2026 at 10:42 AM" */
+export const formatDateTimeLong = (iso: string) => `${formatDate(iso)} at ${formatTime(iso)}`;
