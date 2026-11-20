@@ -152,10 +152,10 @@ permission check, never via a public bucket URL.
    | `WEB_ORIGIN` | only if you use a custom domain (otherwise the Railway domain is used) |
 
 4. *Settings* → *Networking* → **Generate Domain**.
-5. **Field teams:** in **Users & teams → Add user or team → Field team**, enter a team name;
-   a username and password are suggested. The details are shown once with copy buttons;
-   hand them to the team leader privately. Team members type their own name as *Field
-   officer (Msajili)* on each registration. Use **Reset password** if a team forgets theirs.
+5. **Registrars:** in **Users & roles → Add user**, type the person's full name; a username
+   (e.g. `paul.lubinza`) and password are suggested. Email is optional. The sign-in details
+   are shown once with copy buttons; hand them over privately. Each registration saves the
+   registrar's name as *Msajili*. Use **Reset password** if someone forgets theirs.
 6. **First admin:** add `ADMIN_EMAIL` and `ADMIN_PASSWORD` (10+ characters) to the
    variables and redeploy. On startup, while the database has no users, the app creates
    that admin. Sign in, change the password under **Account**, then delete

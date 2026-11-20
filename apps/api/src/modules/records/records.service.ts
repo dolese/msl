@@ -25,7 +25,6 @@ export function toDTO(row: RecordRow, registrar: { id: string; name: string }): 
     hasPhoto: !!row.photoPath,
     plots: row.plots,
     registeredBy: registrar,
-    fieldOfficer: row.fieldOfficer,
     consentAt: row.consentAt.toISOString(),
     createdAt: row.createdAt.toISOString(),
   };
@@ -74,7 +73,6 @@ export async function createRecord(
   input: z.output<typeof createRecordSchema>,
   registeredById: string,
   photoPath: string | null,
-  fieldOfficer: string | null,
 ) {
   const nationalIdHash = hmac(input.nationalId, idHashKey());
   const [dupe] = await db.select({ id: records.id }).from(records)
@@ -89,7 +87,6 @@ export async function createRecord(
     nationalIdLast2: input.nationalId.slice(-2),
     photoPath,
     plots: input.plots,
-    fieldOfficer,
     consentAt: new Date(),
     registeredById,
   }).returning();
@@ -118,10 +115,10 @@ export async function exportCsv(): Promise<{ csv: string; count: number }> {
     .innerJoin(users, eq(users.id, records.registeredById)).orderBy(desc(records.createdAt));
   const esc = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
   const lines = [
-    'registration_no,full_name,phone,national_id,plots,status,registered_by,field_officer,registered_at',
+    'registration_no,full_name,phone,national_id,plots,status,registered_by,registered_at',
     ...rows.map(({ record: r, registrar }) =>
       [formatRegNo(r.seq, r.createdAt), r.fullName, r.phone, maskNationalId(r.nationalIdLast2), r.plots == null ? '' : String(r.plots),
-        r.status, registrar.name, r.fieldOfficer ?? '', r.createdAt.toISOString()]
+        r.status, registrar.name, r.createdAt.toISOString()]
         .map(esc).join(',')),
   ];
   return { csv: lines.join('\n'), count: rows.length };

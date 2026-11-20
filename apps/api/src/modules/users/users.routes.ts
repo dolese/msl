@@ -16,7 +16,7 @@ usersRouter.get('/', async (_req, res) => {
 
 usersRouter.post('/', async (req, res) => {
   const user = await svc.createUser(inviteUserSchema.parse(req.body));
-  await audit({ action: 'user.invited', actorId: req.user!.id, targetLabel: svc.loginOf(user), detail: `${user.kind === 'team' ? 'team account · ' : ''}${user.role}`, ip: req.ip });
+  await audit({ action: 'user.invited', actorId: req.user!.id, targetLabel: svc.loginOf(user), detail: user.role, ip: req.ip });
   res.status(201).json(user);
 });
 

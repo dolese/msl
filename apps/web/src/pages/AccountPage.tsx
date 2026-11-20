@@ -42,7 +42,7 @@ export function AccountPage() {
             <Avatar name={user.name} size={64} />
             <div style={{ minWidth: 0 }}>
               <h2 style={{ fontSize: 18, fontWeight: 600 }}>{user.name}</h2>
-              <div className="muted row" style={{ gap: 6 }}><Mail size={15} /> {user.email ?? user.username}{user.kind === 'team' && <span className="kind-team">Team</span>}</div>
+              <div className="muted row" style={{ gap: 6 }}><Mail size={15} /> {user.username ?? user.email}{user.username && user.email && <span className="muted"> · {user.email}</span>}</div>
               <div style={{ marginTop: 8 }}><StatusBadge value={user.role} /></div>
             </div>
           </div>

@@ -53,10 +53,12 @@ describe('plots and registration numbers', () => {
   });
 });
 
-describe('team accounts', () => {
-  it('accepts a team account with a lowercase username', () => {
-    const t = inviteUserSchema.parse({ kind: 'team', name: 'Team Kinondoni', username: 'Team.Kinondoni', role: 'registrar', password: 'abcd-efgh-jkmn' });
-    expect(t.kind === 'team' && t.username).toBe('team.kinondoni');
-    expect(inviteUserSchema.safeParse({ kind: 'team', name: 'X Team', username: 'a b', role: 'registrar', password: 'abcd-efgh-jkmn' }).success).toBe(false);
+describe('user accounts', () => {
+  it('needs a username; email is optional', () => {
+    const u = inviteUserSchema.parse({ name: 'Paul Lubinza', username: 'Paul.Lubinza', email: '', role: 'registrar', password: 'abcd-efgh-jkmn' });
+    expect(u.username).toBe('paul.lubinza');
+    expect(u.email).toBeUndefined();
+    expect(inviteUserSchema.parse({ name: 'Paul Lubinza', username: 'paul', email: 'Paul@Company.co.tz', role: 'registrar', password: 'abcd-efgh-jkmn' }).email).toBe('paul@company.co.tz');
+    expect(inviteUserSchema.safeParse({ name: 'Paul Lubinza', username: 'paul lubinza', role: 'registrar', password: 'abcd-efgh-jkmn' }).success).toBe(false);
   });
 });

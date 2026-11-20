@@ -8,31 +8,28 @@ import { hashPassword } from '../../lib/crypto.js';
 import { conflict, notFound } from '../../lib/http-error.js';
 
 const toDTO = (u: typeof users.$inferSelect): UserDTO => ({
-  id: u.id, name: u.name, kind: u.kind, email: u.email, username: u.username, role: u.role,
+  id: u.id, name: u.name, email: u.email, username: u.username, role: u.role,
   twoFactorEnabled: !!u.totpSecret, locked: !!u.lockedAt,
 });
 
 /** Login name shown in lists and audit entries. */
-export const loginOf = (u: { email: string | null; username: string | null }) => u.email ?? u.username ?? '';
+export const loginOf = (u: { email: string | null; username: string | null }) => u.username ?? u.email ?? '';
 
 export async function listUsers(): Promise<UserDTO[]> {
   return (await db.select().from(users).orderBy(asc(users.createdAt))).map(toDTO);
 }
 
-/**
- * Creates a person (signs in with email) or a team account (signs in with username)
- * with a password chosen by the admin, who hands it over.
- */
+/** Creates a personal account with a password chosen by the admin, who hands it over. */
 export async function createUser(input: z.output<typeof inviteUserSchema>): Promise<UserDTO> {
-  const email = input.kind === 'person' ? input.email : null;
-  const username = input.kind === 'team' ? input.username : null;
-  const login = (email ?? username)!;
-  // A login name must be unique across both columns, so "x" can't be someone's username and another's email.
-  const [existing] = await db.select({ id: users.id }).from(users)
-    .where(or(eq(users.email, login), eq(users.username, login))).limit(1);
-  if (existing) throw conflict(input.kind === 'team' ? 'That username is already taken' : 'A user with this email already exists');
+  const username = input.username;
+  const email = input.email ?? null;
+  // Sign-in names must be unique across both columns ("paul" can't be one user's username and another's email).
+  const taken = async (v: string) =>
+    (await db.select({ id: users.id }).from(users).where(or(eq(users.email, v), eq(users.username, v))).limit(1)).length > 0;
+  if (await taken(username)) throw conflict('That username is already taken');
+  if (email && (await taken(email))) throw conflict('A user with this email already exists');
   const [row] = await db.insert(users).values({
-    name: input.name, kind: input.kind, email, username, role: input.role,
+    name: input.name, email, username, role: input.role,
     passwordHash: await hashPassword(input.password),
   }).returning();
   return toDTO(row!);

@@ -1,5 +1,5 @@
 import type {
-  AccountKind, AuditEventDTO, DashboardDTO, InviteUserInput, LoginInput, Paginated, RecordDTO, Role, SharedRecordDTO, ShareTtl, UserDTO,
+  AuditEventDTO, DashboardDTO, InviteUserInput, LoginInput, Paginated, RecordDTO, Role, SharedRecordDTO, ShareTtl, UserDTO,
 } from '@msl/shared';
 
 export class ApiError extends Error {
@@ -31,7 +31,7 @@ const qs = (params: Record<string, string | number | undefined>) => {
   return s ? `?${s}` : '';
 };
 
-export type SessionUser = { id: string; name: string; email: string | null; username: string | null; kind: AccountKind; role: Role };
+export type SessionUser = { id: string; name: string; email: string | null; username: string | null; role: Role };
 
 export const api = {
   login: (body: LoginInput) =>

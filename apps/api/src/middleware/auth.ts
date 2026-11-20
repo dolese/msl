@@ -21,7 +21,7 @@ export async function loadSession(req: Request, _res: Response, next: NextFuncti
   if (row && !row.user.lockedAt) {
     req.session = { id: row.sid, csrfToken: row.csrf };
     const u = row.user;
-    req.user = { id: u.id, name: u.name, email: u.email, username: u.username, kind: u.kind, role: u.role };
+    req.user = { id: u.id, name: u.name, email: u.email, username: u.username, role: u.role };
   }
   next();
 }

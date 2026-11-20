@@ -15,6 +15,13 @@
       "when": 1795205158668,
       "tag": "0001_teams_plots_regno",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795205516219,
+      "tag": "0002_personal_accounts",
+      "breakpoints": true
     }
   ]
 }

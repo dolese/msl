@@ -11,16 +11,13 @@ export interface Paginated<T> {
 export interface UserDTO {
   id: string;
   name: string;
-  kind: AccountKind;
-  /** People sign in with email; team accounts with username */
+  /** Sign in with username, or email when set */
   email: string | null;
   username: string | null;
   role: Role;
   twoFactorEnabled: boolean;
   locked: boolean;
 }
-
-export type AccountKind = 'person' | 'team';
 
 export interface RecordDTO {
   id: string;
@@ -33,9 +30,8 @@ export interface RecordDTO {
   hasPhoto: boolean;
   /** Idadi ya vipande */
   plots: number | null;
+  /** Msajili: the user whose account made the registration */
   registeredBy: { id: string; name: string };
-  /** Field officer who did the registration, when a team account was used */
-  fieldOfficer: string | null;
   consentAt: string;
   createdAt: string;
 }
@@ -64,7 +60,7 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export interface AuditEventDTO {
   id: string;
   action: AuditAction;
-  actor: { id: string; name: string; kind: AccountKind } | null; // null = System
+  actor: { id: string; name: string } | null; // null = System
   targetLabel: string | null;
   detail: string | null;
   ip: string | null;

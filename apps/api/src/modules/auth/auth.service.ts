@@ -54,7 +54,7 @@ export async function signIn(input: LoginInput, ip: string | undefined) {
   return {
     token,
     csrfToken,
-    user: { id: user.id, name: user.name, email: user.email, username: user.username, kind: user.kind, role: user.role },
+    user: { id: user.id, name: user.name, email: user.email, username: user.username, role: user.role },
   };
 }
 

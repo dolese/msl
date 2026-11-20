@@ -69,10 +69,10 @@ export function LoginPage() {
           <p className="sub">Use the sign-in details your administrator gave you.</p>
           <form onSubmit={onSubmit} noValidate>
             <div className="field">
-              <label htmlFor="email">Email or team username</label>
+              <label htmlFor="email">Username or email</label>
               <div className="input-icon"><User size={18} />
                 <input id="email" className="input" type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
-                  autoComplete="username" placeholder="you@company.co.tz or team.kinondoni"
+                  autoComplete="username" placeholder="e.g. paul.lubinza"
                   value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} />
               </div>
             </div>

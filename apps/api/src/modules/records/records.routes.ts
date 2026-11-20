@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { createRecordSchema, createShareSchema, listRecordsQuery, rejectRecordSchema, updateRecordSchema } from '@msl/shared';
 import { requirePermission } from '../../middleware/auth.js';
 import { audit } from '../../lib/audit.js';
@@ -30,11 +30,8 @@ recordsRouter.get('/export.csv', requirePermission('records:export'), async (req
 recordsRouter.post('/', requirePermission('records:create'), photoUpload(), async (req, res) => {
   // multipart fields arrive as strings
   const input = createRecordSchema.parse({ ...req.body, consent: req.body.consent === 'true' || req.body.consent === true });
-  // Several people can share a team account, so a team must say who did the registration.
-  const isTeam = req.user!.kind === 'team';
-  if (isTeam && !input.fieldOfficer) throw new ZodError([{ code: 'custom', path: ['fieldOfficer'], message: "Enter the field officer's name", input: '' }]);
   const photoKey = req.file ? await savePhoto(req.file) : null;
-  const row = await svc.createRecord(input, req.user!.id, photoKey, isTeam ? input.fieldOfficer! : null);
+  const row = await svc.createRecord(input, req.user!.id, photoKey);
   await audit({ action: 'record.created', actorId: req.user!.id, recordId: row.id, targetLabel: row.fullName, ip: req.ip });
   res.status(201).json(svc.toDTO(row, { id: req.user!.id, name: req.user!.name }));
 });

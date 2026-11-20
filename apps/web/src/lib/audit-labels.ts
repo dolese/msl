@@ -28,7 +28,7 @@ const META: Record<AuditAction, { verb: string; icon: LucideIcon; tone: Tone }> 
 
 export function describeEvent(e: AuditEventDTO) {
   const m = META[e.action];
-  const who = e.actor && (e.actor.kind === 'team' ? e.actor.name : shortName(e.actor.name));
+  const who = e.actor && shortName(e.actor.name);
   const title = who ? `${who} ${m.verb}` : m.verb.charAt(0).toUpperCase() + m.verb.slice(1);
   const subtitle = [e.targetLabel, e.detail].filter(Boolean).join(' · ');
   return { title, subtitle, icon: m.icon, tone: m.tone };

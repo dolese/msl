@@ -5,17 +5,14 @@ import {
 const bytea = customType<{ data: Buffer }>({ dataType: () => 'bytea' });
 
 export const roleEnum = pgEnum('role', ['admin', 'registrar', 'viewer']);
-export const accountKindEnum = pgEnum('account_kind', ['person', 'team']);
 export const statusEnum = pgEnum('record_status', ['pending', 'verified', 'rejected']);
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  kind: accountKindEnum('kind').notNull().default('person'),
-  /** People sign in with email */
-  email: text('email').unique(),
-  /** Team accounts sign in with username */
+  /** Sign-in names: username (set by the admin) and/or email */
   username: text('username').unique(),
+  email: text('email').unique(),
   passwordHash: text('password_hash').notNull(),
   role: roleEnum('role').notNull().default('viewer'),
   totpSecret: text('totp_secret'), // null => 2FA off
@@ -48,8 +45,6 @@ export const records = pgTable(
     photoPath: text('photo_path'),
     /** Idadi ya vipande */
     plots: integer('plots'),
-    /** Field officer (Msajili) when registered from a team account */
-    fieldOfficer: text('field_officer'),
     status: statusEnum('status').notNull().default('pending'),
     consentAt: timestamp('consent_at', { withTimezone: true }).notNull(),
     registeredById: uuid('registered_by_id').notNull().references(() => users.id),

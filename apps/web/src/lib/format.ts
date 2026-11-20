@@ -29,7 +29,3 @@ export const formatPhone = (p: string) => p.replace(/^\+255(\d{3})(\d{3})(\d{3})
 
 /** "Nov 18, 2026 at 10:42 AM" */
 export const formatDateTimeLong = (iso: string) => `${formatDate(iso)} at ${formatTime(iso)}`;
-
-/** "Team Kinondoni · Paul Lubinza" for team accounts, otherwise the user's name */
-export const registeredByLabel = (r: { registeredBy: { name: string }; fieldOfficer: string | null }) =>
-  r.fieldOfficer ? `${r.fieldOfficer} (${r.registeredBy.name})` : r.registeredBy.name;

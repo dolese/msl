@@ -296,7 +296,6 @@ button { font: inherit; cursor: pointer; }
 .cred-row:last-child { border-bottom: 0; }
 .cred-row .k { width: 92px; font-size: 13px; color: var(--text-3); flex-shrink: 0; }
 .cred-row .v { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
-.kind-team { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--brand-red); background: #fdeced; border-radius: 5px; padding: 1px 6px; margin-left: 6px; vertical-align: 1px; }
 
 /* ---------- Dashboard ---------- */
 :root { --chart-bar: #9aabe0; --chart-grid: #eef0f3; }

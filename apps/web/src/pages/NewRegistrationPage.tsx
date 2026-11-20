@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Camera, Hash, IdCard, Lock, MapPinned, Phone, RefreshCw, User, UserCheck } from 'lucide-react';
+import { Camera, IdCard, Lock, MapPinned, Phone, RefreshCw, User, UserCheck } from 'lucide-react';
 import { createRecordSchema } from '@msl/shared';
 import { api, ApiError } from '../api/client';
 import { Alert } from '../components/Feedback';
@@ -8,14 +8,13 @@ import { PageHeader } from '../components/PageHeader';
 import { useAuth } from '../hooks/useAuth';
 
 const MAX_PHOTO = 5 * 1024 * 1024;
-type Field = 'fullName' | 'phone' | 'nationalId' | 'plots' | 'fieldOfficer';
+type Field = 'fullName' | 'phone' | 'nationalId' | 'plots';
 type Errors = Partial<Record<Field | 'consent' | 'photo' | 'form', string>>;
 
 export function NewRegistrationPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isTeam = user?.kind === 'team';
-  const [form, setForm] = useState({ fullName: '', phone: '', nationalId: '', plots: '', fieldOfficer: '', consent: false });
+  const [form, setForm] = useState({ fullName: '', phone: '', nationalId: '', plots: '', consent: false });
   const [photo, setPhoto] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [busy, setBusy] = useState(false);
@@ -31,17 +30,17 @@ export function NewRegistrationPage() {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const parsed = createRecordSchema.safeParse({ ...form, fieldOfficer: isTeam ? form.fieldOfficer : undefined });
-    const fe: Errors = {};
-    if (!parsed.success) for (const issue of parsed.error.issues) fe[String(issue.path[0]) as keyof Errors] ??= issue.message;
-    if (isTeam && !form.fieldOfficer.trim()) fe.fieldOfficer = "Enter the field officer's name";
-    if (!parsed.success || Object.keys(fe).length) return setErrors(fe);
+    const parsed = createRecordSchema.safeParse(form);
+    if (!parsed.success) {
+      const fe: Errors = {};
+      for (const issue of parsed.error.issues) fe[String(issue.path[0]) as keyof Errors] ??= issue.message;
+      return setErrors(fe);
+    }
     const body = new FormData();
     body.set('fullName', parsed.data.fullName);
     body.set('phone', parsed.data.phone);
     body.set('nationalId', parsed.data.nationalId);
     body.set('plots', String(parsed.data.plots));
-    if (isTeam) body.set('fieldOfficer', form.fieldOfficer.trim());
     body.set('consent', 'true');
     if (photo) body.set('photo', photo);
     setBusy(true);
@@ -125,23 +124,11 @@ export function NewRegistrationPage() {
                 </div>
                 {errors.plots && <span className="field-error">{errors.plots}</span>}
               </div>
-              {isTeam ? (
-                <div className="field">
-                  <label htmlFor="fieldOfficer">Field officer <span className="muted">(Msajili)</span> <span className="req">*</span></label>
-                  <div className="input-icon"><UserCheck size={18} />
-                    <input id="fieldOfficer" className="input" autoComplete="name" placeholder="Your full name"
-                      value={form.fieldOfficer} onChange={set('fieldOfficer')} aria-invalid={!!errors.fieldOfficer} />
-                  </div>
-                  {errors.fieldOfficer ? <span className="field-error">{errors.fieldOfficer}</span>
-                    : <span className="hint">The person doing this registration for {user?.name}.</span>}
-                </div>
-              ) : (
-                <div className="field">
-                  <label>Registered by</label>
-                  <div className="input-icon"><Hash size={18} /><input className="input" readOnly value={user?.name ?? ''} /></div>
-                  <span className="hint">Added automatically from your account.</span>
-                </div>
-              )}
+              <div className="field">
+                <label>Registrar <span className="muted">(Msajili)</span></label>
+                <div className="input-icon"><UserCheck size={18} /><input className="input" readOnly value={user?.name ?? ''} /></div>
+                <span className="hint">Saved automatically from your account.</span>
+              </div>
               <div className="field full">
                 <label className={`checkbox-card${form.consent ? ' checked' : ''}`}>
                   <input type="checkbox" checked={form.consent}

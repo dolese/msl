@@ -10,7 +10,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Pagination } from '../components/Pagination';
 import { useAsync } from '../hooks/useAsync';
 import { useAuth } from '../hooks/useAuth';
-import { formatDate, formatMaskedId, formatPhone, registeredByLabel } from '../lib/format';
+import { formatDate, formatMaskedId, formatPhone } from '../lib/format';
 
 function useDebounced<T>(value: T, ms = 300) {
   const [v, setV] = useState(value);
@@ -96,7 +96,7 @@ export function RecordsPage() {
                       <td className="masked">{formatMaskedId(r.nationalIdMasked)}</td>
                       <td className="num">{r.plots ?? '—'}</td>
                       <td><StatusBadge value={r.status} /></td>
-                      <td><div>{formatDate(r.createdAt)}</div><div className="small muted">by {registeredByLabel(r)}</div></td>
+                      <td><div>{formatDate(r.createdAt)}</div><div className="small muted">by {r.registeredBy.name}</div></td>
                       <td className="num muted"><ChevronRight size={18} /></td>
                     </tr>
                   ))}

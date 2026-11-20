@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ROLES } from './roles.js';
 
-/** Team account usernames: lowercase letters, numbers, dot, dash, underscore. */
+/** Usernames: lowercase letters, numbers, dot, dash, underscore. */
 export const USERNAME_RE = /^[a-z0-9][a-z0-9._-]{2,31}$/;
 export const usernameRule = z
   .string()
@@ -47,8 +47,6 @@ export const createRecordSchema = z.object({
   phone: tzPhone,
   nationalId,
   plots: plotsRule,
-  /** Name of the field officer (Msajili); required when signed in with a team account */
-  fieldOfficer: z.string().trim().max(80).optional(),
   consent: z.literal(true, { error: 'Consent is required under Tanzania PDPA' }),
 });
 export type CreateRecordInput = z.input<typeof createRecordSchema>;
@@ -83,11 +81,15 @@ export const createShareSchema = z.object({
 export const passwordRule = z.string().min(10, 'Use at least 10 characters').max(200);
 
 const accountBase = { name: z.string().trim().min(2).max(80), role: z.enum(ROLES), password: passwordRule };
-/** Admin creates either a person (signs in with email) or a team account (signs in with username). */
-export const inviteUserSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('person'), email: z.email().transform((v) => v.toLowerCase()), ...accountBase }),
-  z.object({ kind: z.literal('team'), username: usernameRule, ...accountBase }),
-]);
+/**
+ * Admin creates a personal account (e.g. a field registrar). They sign in with the
+ * username, or with the email address if one is given.
+ */
+export const inviteUserSchema = z.object({
+  ...accountBase,
+  username: usernameRule,
+  email: z.union([z.literal(''), z.email()]).optional().transform((v) => (v ? v.toLowerCase() : undefined)),
+});
 export type InviteUserInput = z.input<typeof inviteUserSchema>;
 
 export const resetPasswordSchema = z.object({ password: passwordRule });
