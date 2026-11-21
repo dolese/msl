@@ -16,7 +16,7 @@ export function CopyButton({ value, label = 'Copy', compact, text = 'Copy' }: { 
     setTimeout(() => setDone(false), 1600);
   }
   return (
-    <button type="button" className={`btn btn-secondary btn-sm copy-btn${done ? ' copied' : ''}`} onClick={copy}
+    <button type="button" className={`btn btn-secondary btn-sm copy-btn${done ? ' copied' : ''}${text !== 'Copy' ? ' keep-text' : ''}`} onClick={copy}
       aria-label={done ? 'Copied' : `${label}`} title={label}>
       {done ? <Check size={14} /> : <Copy size={14} />}{!compact && <span>{done ? 'Copied' : text}</span>}
     </button>

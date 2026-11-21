@@ -290,6 +290,10 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------- Copy, credentials ---------- */
 .copy-btn { height: 30px; padding: 0 10px; gap: 6px; font-size: 12.5px; }
+@media (max-width: 640px) {
+  .copy-btn:not(.keep-text) { width: 34px; padding: 0; justify-content: center; }
+  .copy-btn:not(.keep-text) span { display: none; }
+}
 .copy-btn.copied { color: var(--success); border-color: var(--success-border); background: var(--success-bg); }
 .cred { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
 .cred-row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
@@ -314,7 +318,11 @@ button { font: inherit; cursor: pointer; }
 
 /* ---------- Detail ---------- */
 .profile-photo { aspect-ratio: 16 / 9; max-height: 320px; background: linear-gradient(135deg, var(--navy-900), var(--navy-800)); border-radius: var(--radius) var(--radius) 0 0; display: grid; place-items: center; position: relative; overflow: hidden; }
-.profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+.profile-photo.has-img { --photo-h: 420px; aspect-ratio: auto; max-height: none; height: var(--photo-h); }
+@media (max-width: 640px) { .profile-photo.has-img { --photo-h: 380px; } }
+.profile-photo .photo-backdrop { position: absolute; inset: -30px; width: calc(100% + 60px); height: calc(100% + 60px); object-fit: cover; filter: blur(22px) brightness(.55) saturate(1.1); }
+.profile-photo .photo-link { position: relative; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; cursor: zoom-in; }
+.profile-photo .photo-main { max-width: 100%; max-height: var(--photo-h); width: auto; height: auto; object-fit: contain; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
 .profile-photo .avatar { background: rgba(255,255,255,.12); color: #fff; }
 .profile-photo .photo-action { position: absolute; right: 14px; bottom: 14px; }
 .dl { display: grid; grid-template-columns: auto 1fr; gap: 0; margin: 0; }
@@ -322,6 +330,7 @@ button { font: inherit; cursor: pointer; }
 .dl dt { display: flex; align-items: center; gap: 10px; color: var(--text-3); font-size: 14px; padding: 13px 16px 13px 0; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .dl dd { margin: 0; padding: 13px 0; border-bottom: 1px solid var(--border); font-weight: 500; display: flex; align-items: center; gap: 10px; justify-content: space-between; flex-wrap: wrap; min-width: 0; }
 .dl > div:last-child dt, .dl > div:last-child dd { border-bottom: 0; }
+@media (max-width: 640px) { .dl dd { flex-wrap: nowrap; gap: 6px; } .dl dt { font-size: 13px; padding-right: 10px; } .dl .masked { letter-spacing: 0; } }
 
 .timeline { list-style: none; margin: 0; padding: 0; position: relative; }
 .timeline li { display: flex; gap: 14px; padding-bottom: 18px; position: relative; }
@@ -406,6 +415,7 @@ button { font: inherit; cursor: pointer; }
 .public-head span { display: block; font-size: 12.5px; color: #aab5d3; }
 .public-card { overflow: hidden; }
 .public-card .profile-photo { aspect-ratio: 16 / 10; max-height: none; border-radius: 0; }
+.public-card .profile-photo.has-img { aspect-ratio: auto; height: var(--photo-h); }
 .public-foot { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 6px; }
 
 .center-screen { min-height: 60vh; display: grid; place-items: center; }

@@ -3,10 +3,10 @@ import { useParams } from 'react-router-dom';
 import { Hash, MapPinned, XCircle, CalendarDays, Check, CheckCircle2, Copy, Download, Eye, EyeOff, History, IdCard, Link2, Phone, ShieldCheck, UserRound } from 'lucide-react';
 import type { ShareTtl } from '@msl/shared';
 import { api, ApiError } from '../api/client';
-import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/Badge';
 import { Alert, EmptyState, Loading } from '../components/Feedback';
 import { PageHeader } from '../components/PageHeader';
+import { PhotoFrame } from '../components/PhotoFrame';
 import { CopyButton } from '../components/CopyButton';
 import { RejectModal } from '../components/RejectModal';
 import { useAsync } from '../hooks/useAsync';
@@ -70,12 +70,9 @@ export function RecordDetailPage() {
 
       <div className="grid-detail">
         <div className="card">
-          <div className="profile-photo">
-            {r.hasPhoto
-              ? <img src={api.photoUrl(r.id)} alt={`Photo of ${r.fullName}`} />
-              : <Avatar name={r.fullName} size={112} />}
-            {r.hasPhoto && <a className="btn btn-secondary btn-sm photo-action" href={api.photoUrl(r.id, true)} download><Download size={15} /> Download</a>}
-          </div>
+          <PhotoFrame src={r.hasPhoto ? api.photoUrl(r.id) : null} name={r.fullName}>
+            <a className="btn btn-secondary btn-sm photo-action" href={api.photoUrl(r.id, true)} download aria-label="Download photo"><Download size={15} /><span className="hide-sm">Download</span></a>
+          </PhotoFrame>
           <div className="card-body">
             <dl className="dl">
               <div><dt><Hash size={17} /> Registration no.</dt><dd><span className="mono">{r.regNo}</span><CopyButton value={r.regNo} label="Copy registration number" /></dd></div>
@@ -87,8 +84,8 @@ export function RecordDetailPage() {
                   <span className="row" style={{ gap: 8 }}>
                     {revealed && <CopyButton value={revealed.replace(/-/g, '')} label="Copy NIDA number" />}
                     {can('records:revealId') && (
-                      <button className="btn btn-secondary btn-sm" onClick={reveal}>
-                        {revealed ? <><EyeOff size={15} /> Hide</> : <><Eye size={15} /> Reveal</>}
+                      <button className="btn btn-secondary btn-sm" onClick={reveal} aria-label={revealed ? 'Hide ID number' : 'Reveal ID number'}>
+                        {revealed ? <><EyeOff size={15} /><span className="hide-sm">Hide</span></> : <><Eye size={15} /><span className="hide-sm">Reveal</span></>}
                       </button>
                     )}
                   </span>

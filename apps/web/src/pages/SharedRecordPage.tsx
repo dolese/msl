@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { CalendarDays, Clock, Hash, IdCard, LinkIcon, MapPinned, Phone, ShieldCheck } from 'lucide-react';
 import { api } from '../api/client';
-import { Avatar } from '../components/Avatar';
+import { PhotoFrame } from '../components/PhotoFrame';
 import { StatusBadge } from '../components/Badge';
 import { BrandMark } from '../components/BrandMark';
 import { Alert, EmptyState, Loading } from '../components/Feedback';
@@ -33,9 +33,7 @@ export function SharedRecordPage() {
         ) : (
           <>
             <div className="card public-card">
-              <div className="profile-photo">
-                {data.photoUrl ? <img src={data.photoUrl} alt={`Photo of ${data.fullName}`} /> : <Avatar name={data.fullName} size={96} />}
-              </div>
+              <PhotoFrame src={data.photoUrl} name={data.fullName} />
               <div className="card-body">
                 <div className="row between wrap" style={{ marginBottom: 6 }}>
                   <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.01em' }}>{data.fullName}</h1>
